@@ -1,0 +1,2903 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>GOPGYM</title>
+
+<!-- PWA manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f1115">
+
+<!-- iOS "Add to Home Screen" support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GOPGYM">
+<link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icon-167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f1115;
+    color: #f0f0f0;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+    padding-top: env(safe-area-inset-top);
+  }
+  .screen { display: none; padding: 16px; }
+  .screen.active { display: block; }
+
+  h1.page-title { font-size: 20px; color: #ff6b35; margin-bottom: 4px; }
+  .subtitle { font-size: 12px; color: #888; margin-bottom: 16px; }
+
+  .card {
+    background: #1c1f26;
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+    border: 1px solid #2a2e38;
+  }
+  .card-title { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .big-stat { font-size: 22px; font-weight: 700; }
+  .big-stat .of { font-size: 14px; color: #888; font-weight: 400; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  .bar-bg { background: #0f1115; border-radius: 6px; height: 8px; margin-top: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; background: #ff6b35; border-radius: 6px; transition: width .3s; }
+
+  .group-title {
+    font-size: 13px; color: #ff6b35; text-transform: uppercase;
+    letter-spacing: .5px; margin: 16px 0 8px; font-weight: 700;
+  }
+
+  input[type="number"], input[type="text"], input[type="date"] {
+    width: 100%; background: #0f1115; border: 1px solid #2a2e38;
+    border-radius: 8px; color: #f0f0f0; padding: 8px; text-align: center; font-size: 14px;
+  }
+  input:focus { outline: none; border-color: #ff6b35; }
+
+  button { font-family: inherit; cursor: pointer; }
+  .btn {
+    background: #ff6b35; color: #0f1115; border: none; border-radius: 10px;
+    padding: 10px 14px; font-size: 13px; font-weight: 700;
+  }
+  .btn.secondary { background: #2a2e38; color: #f0f0f0; }
+  .btn.small { padding: 6px 10px; font-size: 12px; }
+  .btn-row { display: flex; gap: 8px; }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #14161c; border-top: 1px solid #2a2e38;
+    display: flex; padding: 6px 0; padding-bottom: calc(6px + env(safe-area-inset-bottom)); z-index: 50;
+  }
+  .nav-btn {
+    flex: 1; background: none; border: none; color: #777;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 6px 0; font-size: 10px;
+  }
+  .nav-btn.active { color: #ff6b35; }
+  .nav-btn .icon { font-size: 18px; }
+
+  /* Workout day tabs */
+  .day-tabs { display: flex; overflow-x: auto; gap: 6px; margin-bottom: 14px; padding-bottom: 4px; }
+  .day-tab {
+    flex: 0 0 auto; padding: 8px 12px; border-radius: 20px; background: #1c1f26;
+    color: #aaa; font-size: 13px; font-weight: 600; white-space: nowrap; border: 1px solid #2a2e38;
+  }
+  .day-tab.active { background: #ff6b35; color: #0f1115; border-color: #ff6b35; }
+
+  .exercise-card { background: #1c1f26; border-radius: 14px; padding: 14px; margin-bottom: 12px; border: 1px solid #2a2e38; }
+  .exercise-name { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+  .rest-day { text-align: center; padding: 60px 20px; color: #888; font-size: 16px; }
+
+  .set-row-dyn { background: #14161c; border-radius: 12px; padding: 12px; margin-bottom: 10px; border: 1px solid #22252e; }
+  .set-row-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #888; margin-bottom: 8px; font-weight: 700; }
+  .set-row-header .set-remove { color: #ff6b6b; padding: 4px 10px; font-size: 16px; cursor: pointer; }
+  .set-inputs-dyn { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .set-inputs-dyn input { font-size: 18px; padding: 14px 6px; font-weight: 700; }
+  .rir-row { display: flex; align-items: center; gap: 6px; }
+  .rir-label { font-size: 11px; color: #888; flex-shrink: 0; }
+  .rir-buttons { display: flex; gap: 5px; flex: 1; }
+  .rir-btn {
+    flex: 1; background: #0f1115; border: 1px solid #2a2e38; color: #aaa;
+    border-radius: 8px; padding: 12px 0; font-size: 13px; font-weight: 700;
+  }
+  .rir-btn.active { background: #ff6b35; border-color: #ff6b35; color: #0f1115; }
+  .add-set-btn { width: 100%; margin-bottom: 4px; padding: 12px; font-size: 14px; }
+
+  .stat-block { margin-top: 8px; }
+  .stat-block-title { font-size: 10px; color: #ff6b35; text-transform: uppercase; letter-spacing: .5px; font-weight: 700; margin-bottom: 2px; }
+  .stat-block-body { font-size: 12px; color: #f0f0f0; line-height: 1.5; }
+  .stat-block.target-block .stat-block-body { color: #ffcb6b; font-weight: 600; }
+
+  .exercise-stats {
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed #2a2e38;
+    font-size: 12px; color: #aaa; display: flex; flex-direction: column; gap: 4px;
+  }
+  .exercise-stats .stat-line { display: flex; justify-content: space-between; }
+  .exercise-stats .stat-line b { color: #f0f0f0; font-weight: 600; }
+  .exercise-stats .pr-badge {
+    display: inline-block; background: #2a2410; color: #ffcb6b; border: 1px solid #4a3f1a;
+    border-radius: 6px; padding: 2px 6px; font-size: 11px; font-weight: 700;
+  }
+  .exercise-stats .change-pos { color: #6bff8f; font-weight: 700; }
+  .exercise-stats .change-neg { color: #ff8f6b; font-weight: 700; }
+  .exercise-stats .new-pr-banner {
+    background: linear-gradient(90deg, #3a2410, #1c1f26); border: 1px solid #ff6b35;
+    border-radius: 8px; padding: 6px 8px; font-size: 12px; font-weight: 700; color: #ffcb6b;
+    text-align: center; margin-bottom: 4px;
+  }
+  .exercise-stats .no-history { color: #666; font-style: italic; }
+
+  /* meal entries */
+  .meal-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #2a2e38; font-size: 13px; }
+  .meal-item:last-child { border-bottom: none; }
+  .meal-item .del { color: #ff6b6b; font-size: 16px; padding: 4px 8px; }
+  .add-food-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 4px; margin-top: 8px; }
+  .add-food-row input { font-size: 12px; padding: 6px 2px; }
+
+  .weight-entry { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #2a2e38; font-size: 13px; }
+  .weight-entry:last-child { border-bottom: none; }
+
+  .status-line { font-size: 11px; text-align: center; color: #888; margin-bottom: 8px; min-height: 14px; }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85);
+    z-index: 200; padding: 20px; padding-top: 60px; overflow-y: auto;
+  }
+  .modal-box { background: #1c1f26; border-radius: 14px; padding: 16px; max-width: 500px; margin: 0 auto; }
+  .modal-box textarea {
+    width: 100%; height: 160px; background: #0f1115; border: 1px solid #2a2e38;
+    border-radius: 8px; color: #f0f0f0; padding: 8px; font-size: 12px; font-family: monospace;
+  }
+  .water-drop { font-size: 40px; text-align: center; margin: 10px 0; }
+  .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: 13px; }
+  .settings-row input { width: 80px; }
+
+  .filter-tabs, .metric-tabs { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; }
+  .filter-tab, .metric-tab {
+    flex: 0 0 auto; padding: 6px 12px; border-radius: 16px; background: #1c1f26;
+    color: #aaa; font-size: 12px; font-weight: 600; border: 1px solid #2a2e38; white-space: nowrap;
+  }
+  .filter-tab.active, .metric-tab.active { background: #ff6b35; color: #0f1115; border-color: #ff6b35; }
+
+  .today-target-card { }
+  .ttc-day { font-size: 13px; color: #ff6b35; font-weight: 700; margin-bottom: 10px; }
+  .ttc-exercise { padding: 8px 0; border-bottom: 1px solid #2a2e38; font-size: 12px; }
+  .ttc-exercise:last-child { border-bottom: none; }
+  .ttc-exercise .ttc-name { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+  .ttc-row { display: flex; justify-content: space-between; color: #aaa; }
+  .ttc-row .ttc-target { color: #ffcb6b; font-weight: 600; }
+  .ttc-empty { text-align: center; color: #888; padding: 10px; font-size: 13px; }
+
+  .score-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; }
+  .score-row .score-label { width: 90px; flex-shrink: 0; color: #aaa; }
+  .score-row .score-bar-bg { flex: 1; background: #0f1115; border-radius: 6px; height: 8px; overflow: hidden; }
+  .score-row .score-bar-fill { height: 100%; border-radius: 6px; background: #ff6b35; }
+  .score-row .score-val { width: 34px; text-align: right; font-weight: 700; }
+  .overall-score { text-align: center; margin-bottom: 14px; }
+  .overall-score .num { font-size: 34px; font-weight: 800; color: #ff6b35; }
+  .overall-score .label { font-size: 11px; color: #888; }
+
+  .weekly-report-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #2a2e38; font-size: 13px; }
+  .weekly-report-row:last-child { border-bottom: none; }
+  .weekly-report-row .wr-delta { font-size: 11px; margin-left: 6px; }
+  .top-improvement { background: #14161c; border: 1px solid #2a2e38; border-radius: 10px; padding: 10px; margin-top: 10px; text-align: center; }
+  .top-improvement .ti-name { font-weight: 700; font-size: 13px; }
+  .top-improvement .ti-delta { color: #6bff8f; font-weight: 700; font-size: 16px; }
+
+  .remaining-card { display: flex; justify-content: space-around; text-align: center; }
+  .remaining-card .rem-item .rem-num { font-size: 18px; font-weight: 800; color: #ff6b35; }
+  .remaining-card .rem-item .rem-label { font-size: 11px; color: #888; margin-top: 2px; }
+
+  .food-result { background: #14161c; border: 1px solid #22252e; border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; }
+  .food-result-name { font-size: 13px; font-weight: 700; }
+  .food-result-macro { font-size: 11px; color: #888; margin: 2px 0 6px; }
+  .food-result-row { display: grid; grid-template-columns: 1fr 1.4fr auto; gap: 6px; }
+  .food-result-row input, .food-result-row select { font-size: 12px; padding: 6px 4px; }
+  .food-result-row select { background: #0f1115; border: 1px solid #2a2e38; color: #f0f0f0; border-radius: 8px; }
+
+  /* Streak banner */
+  .streak-banner {
+    background: linear-gradient(135deg, #3a2410, #1c1f26); border: 1px solid #ff6b35;
+    border-radius: 14px; padding: 14px; margin-bottom: 14px; text-align: center;
+  }
+  .streak-banner .streak-num { font-size: 28px; font-weight: 800; color: #ffcb6b; }
+  .streak-banner .streak-label { font-size: 12px; color: #ffcb6b; font-weight: 600; letter-spacing: .5px; }
+  .streak-banner.zero { background: #1c1f26; border-color: #2a2e38; }
+  .streak-banner.zero .streak-num, .streak-banner.zero .streak-label { color: #888; }
+
+  /* Achievements */
+  .badges-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .badge-card {
+    background: #1c1f26; border: 1px solid #2a2e38; border-radius: 12px; padding: 10px;
+    text-align: center; opacity: 0.4; filter: grayscale(1);
+  }
+  .badge-card.unlocked {
+    opacity: 1; filter: none; border-color: #ff6b35;
+    background: linear-gradient(135deg, #2a2410, #1c1f26);
+  }
+  .badge-card .badge-icon { font-size: 26px; margin-bottom: 4px; }
+  .badge-card .badge-name { font-size: 11px; font-weight: 700; color: #f0f0f0; }
+  .badge-card.unlocked .badge-name { color: #ffcb6b; }
+  .badge-card .badge-lock { font-size: 10px; color: #666; margin-top: 2px; }
+
+  /* Workout notes */
+  #workoutNotesSection textarea {
+    width: 100%; min-height: 80px; background: #1c1f26; border: 1px solid #2a2e38;
+    border-radius: 12px; color: #f0f0f0; padding: 12px; font-size: 14px; font-family: inherit; resize: vertical;
+  }
+  .last-note-box { background: #14161c; border: 1px dashed #2a2e38; border-radius: 10px; padding: 10px; margin-top: 8px; font-size: 12px; color: #aaa; }
+  .last-note-box b { color: #f0f0f0; display: block; margin-bottom: 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: #888; }
+
+  /* Photos */
+  .photo-upload-col { text-align: center; }
+  .photo-cat-label { font-size: 11px; color: #888; margin-bottom: 4px; font-weight: 600; }
+  .photo-upload-col input[type="file"] { font-size: 10px; width: 100%; }
+  .photo-row { margin-bottom: 12px; }
+  .photo-row-label { font-size: 12px; font-weight: 700; color: #ff6b35; margin-bottom: 6px; }
+  .photo-thumbs-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+  .photo-thumb { flex: 0 0 auto; position: relative; width: 80px; }
+  .photo-thumb img { width: 80px; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #2a2e38; }
+  .photo-thumb-date { font-size: 10px; color: #888; text-align: center; margin-top: 2px; }
+  .photo-thumb-del {
+    position: absolute; top: -6px; right: -6px; background: #ff6b6b; color: #0f1115;
+    width: 18px; height: 18px; border-radius: 50%; font-size: 11px; display: flex;
+    align-items: center; justify-content: center; font-weight: 700;
+  }
+
+  /* Complete toggle on exercise cards */
+  .complete-toggle {
+    width: 100%; background: #2a2e38; color: #aaa; border: none; border-radius: 8px;
+    padding: 10px; font-size: 13px; font-weight: 700; margin-top: 8px;
+  }
+  .complete-toggle.done { background: #1e3a2a; color: #6bff8f; }
+  .exercise-card.completed { border-color: #1e3a2a; }
+
+  /* Recipes */
+  .recipe-card {
+    background: #1c1f26; border: 1px solid #2a2e38; border-radius: 12px; padding: 12px; margin-bottom: 10px;
+  }
+  .recipe-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .recipe-name { font-size: 14px; font-weight: 700; }
+  .recipe-cat { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .recipe-fav-btn { font-size: 20px; background: none; border: none; color: #555; padding: 0 4px; }
+  .recipe-fav-btn.active { color: #ffcb6b; }
+  .recipe-macros { display: flex; gap: 10px; font-size: 11px; color: #aaa; margin-bottom: 6px; flex-wrap: wrap; }
+  .recipe-macros b { color: #f0f0f0; }
+  .recipe-ingredients { font-size: 12px; color: #aaa; margin-bottom: 8px; line-height: 1.5; }
+  .recipe-add-row { display: flex; gap: 6px; }
+  .recipe-add-row select { flex: 1; background: #0f1115; border: 1px solid #2a2e38; color: #f0f0f0; border-radius: 8px; padding: 8px; font-size: 12px; }
+
+  /* Creatine */
+  .creatine-today-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .creatine-today-row label { font-size: 14px; font-weight: 700; }
+  .creatine-checkbox { width: 28px; height: 28px; accent-color: #ff6b35; }
+  .creatine-history-row { display: flex; gap: 6px; overflow-x: auto; }
+  .creatine-day { flex: 0 0 auto; text-align: center; font-size: 10px; color: #888; }
+  .creatine-day .cd-icon { font-size: 16px; }
+
+  /* Reminder banner */
+  #reminderBanner .reminder-card {
+    background: linear-gradient(135deg, #3a2410, #1c1f26); border: 1px solid #ff6b35; border-radius: 12px;
+    padding: 10px 12px; margin-bottom: 12px; font-size: 13px; font-weight: 600; color: #ffcb6b;
+  }
+  #reminderBanner .reminder-card > div { padding: 2px 0; }
+
+  /* Daily goals checklist */
+  .goal-check-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #2a2e38; font-size: 13px; }
+  .goal-check-row:last-child { border-bottom: none; }
+  .goal-check-row .gc-icon { font-size: 18px; width: 24px; text-align: center; }
+  .goal-check-row .gc-label { flex: 1; }
+  .goal-check-row .gc-status { font-size: 16px; }
+  .goal-check-row.met .gc-label { color: #6bff8f; }
+
+  /* Coach analysis */
+  .coach-deficit-row { display: flex; gap: 12px; margin-bottom: 12px; }
+  .coach-deficit-item { flex: 1; background: #14161c; border: 1px solid #2a2e38; border-radius: 10px; padding: 10px; text-align: center; }
+  .coach-deficit-item .cd-num { font-size: 18px; font-weight: 800; color: #ff6b35; }
+  .coach-deficit-item .cd-label { font-size: 10px; color: #888; margin-top: 2px; }
+  .coach-rec-item { background: #14161c; border: 1px solid #2a2e38; border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+
+  /* Recipe steps + prep time */
+  .recipe-prep { font-size: 11px; color: #888; margin-bottom: 4px; }
+  .recipe-steps { font-size: 11px; color: #999; margin: 4px 0 8px; line-height: 1.5; padding-left: 14px; }
+
+  /* Ingredient checklist */
+  .ingredient-checklist { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ingredient-chip {
+    padding: 8px 12px; border-radius: 16px; background: #14161c; border: 1px solid #2a2e38;
+    color: #aaa; font-size: 12px; font-weight: 600;
+  }
+  .ingredient-chip.selected { background: #ff6b35; border-color: #ff6b35; color: #0f1115; }
+
+  /* Daily plan */
+  .plan-slot-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #2a2e38; font-size: 13px; }
+  .plan-slot-row:last-child { border-bottom: none; }
+  .plan-slot-label { color: #888; font-size: 11px; text-transform: uppercase; }
+  .plan-total-row { display: flex; justify-content: space-between; padding-top: 8px; margin-top: 4px; border-top: 2px solid #2a2e38; font-weight: 700; }
+
+  /* Supplements */
+  .supplement-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #2a2e38; font-size: 13px; }
+  .supplement-row:last-child { border-bottom: none; }
+  .supplement-row input { width: 22px; height: 22px; accent-color: #ff6b35; }
+
+  /* Shopping list */
+  .shopping-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #2a2e38; font-size: 13px; }
+  .shopping-item:last-child { border-bottom: none; }
+  .shopping-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #ff6b35; flex-shrink: 0; }
+  .shopping-item.checked span { text-decoration: line-through; color: #666; }
+  .shopping-item span { flex: 1; }
+  .shopping-item .del { color: #ff6b6b; padding: 0 4px; }
+
+  /* Bulk tracking */
+  .bulk-track-row { display: flex; justify-content: space-around; text-align: center; margin-bottom: 10px; }
+  .bulk-track-item .bt-num { font-size: 18px; font-weight: 800; }
+  .bulk-track-item .bt-label { font-size: 10px; color: #888; margin-top: 2px; }
+  .bulk-suggestion { background: #14161c; border: 1px dashed #2a2e38; border-radius: 10px; padding: 8px 10px; font-size: 12px; color: #ffcb6b; margin-top: 8px; }
+
+  /* What to eat (home) */
+  .eat-option { background: #14161c; border: 1px solid #2a2e38; border-radius: 10px; padding: 10px; margin-bottom: 8px; }
+  .eat-option-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .eat-option-name { font-size: 13px; font-weight: 700; }
+  .eat-option-macro { font-size: 11px; color: #888; }
+
+  /* Coach comment card */
+  .coach-comment-card { }
+  .coach-section-title {
+    font-size: 12px; color: #ff6b35; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+    margin: 12px 0 6px;
+  }
+  .coach-section-title:first-child { margin-top: 0; }
+  .coach-line { font-size: 13px; color: #ccc; padding: 3px 0; line-height: 1.4; }
+  .coach-line b { color: #f0f0f0; }
+  .coach-highlight {
+    background: #2a2410; border: 1px solid #ffcb6b; border-radius: 10px; padding: 8px 10px;
+    font-size: 13px; color: #ffcb6b; margin-top: 6px;
+  }
+  .coach-highlight b { color: #ffcb6b; }
+  .coach-warning {
+    background: #2a1410; border: 1px solid #ff8f6b; border-radius: 10px; padding: 8px 10px;
+    font-size: 12px; color: #ffab8f; margin-top: 6px; line-height: 1.5;
+  }
+  .coach-warning b { color: #fff; }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div class="screen active" id="screen-home">
+  <h1 class="page-title">👋 Merhaba</h1>
+  <div class="subtitle" id="homeDate"></div>
+
+  <div id="reminderBanner"></div>
+
+  <div class="streak-banner" id="streakBanner"></div>
+
+  <div class="group-title">🤖 Koç Yorumu</div>
+  <div class="card coach-comment-card" id="coachCommentCard"></div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">🔥 Kalori</div>
+      <div class="big-stat"><span id="homeKcal">0</span> <span class="of">/ <span id="homeKcalGoal">2800</span></span></div>
+      <div class="bar-bg"><div class="bar-fill" id="homeKcalBar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🥩 Protein</div>
+      <div class="big-stat"><span id="homeProtein">0</span>g <span class="of">/ <span id="homeProteinGoal">160</span>g</span></div>
+      <div class="bar-bg"><div class="bar-fill" id="homeProteinBar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">💧 Su</div>
+      <div class="big-stat"><span id="homeWater">0</span>ml <span class="of">/ <span id="homeWaterGoal">3000</span>ml</span></div>
+      <div class="bar-bg"><div class="bar-fill" id="homeWaterBar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏋️ Bugünün Programı</div>
+      <div class="big-stat" style="font-size:15px" id="homeWorkoutName">-</div>
+    </div>
+  </div>
+
+  <div class="group-title">✅ Günlük Hedefler</div>
+  <div class="card" id="dailyGoalsCard"></div>
+
+  <div class="group-title">🧪 Kreatin</div>
+  <div class="card" id="creatineCard"></div>
+
+  <div class="group-title">🍽️ Bugün Ne Yemeliyim?</div>
+  <div class="card" id="whatToEatCard"></div>
+
+  <div class="group-title">⚖️ Bulk Takibi</div>
+  <div class="card" id="bulkTrackingCard"></div>
+
+  <div class="group-title">Bugün Ne Yapmalıyım?</div>
+  <div class="card today-target-card" id="todayTargetCard"></div>
+
+  <div class="group-title">✨ Fitness Özeti</div>
+  <div class="card" id="motivationCard"></div>
+  <div class="subtitle" style="text-align:center; margin-top:-4px;">Bu bir tıbbi/bilimsel sağlık skoru değildir, sadece motivasyon amaçlıdır.</div>
+
+  <div class="group-title">🏅 Rozetler</div>
+  <div class="badges-grid" id="badgesGrid"></div>
+
+  <div class="group-title">⏰ Hatırlatma Ayarları</div>
+  <div class="card">
+    <div class="settings-row">Hatırlatma saati <input type="time" id="reminderTimeInput" value="20:00"></div>
+    <div class="settings-row">🧪 Kreatin <input type="checkbox" id="reminderCreatineToggle" style="width:20px; height:20px;"></div>
+    <div class="settings-row">💧 Su <input type="checkbox" id="reminderWaterToggle" style="width:20px; height:20px;"></div>
+    <div class="settings-row">🥩 Protein <input type="checkbox" id="reminderProteinToggle" style="width:20px; height:20px;"></div>
+    <button class="btn small" style="margin-top:8px; width:100%" onclick="saveReminderSettings()">Ayarları Kaydet</button>
+    <button class="btn small secondary" style="margin-top:8px; width:100%" id="notifyPermissionBtn" onclick="requestNotifyPermission()">🔔 Bildirimlere İzin Ver</button>
+  </div>
+
+  <div class="group-title">Hızlı Erişim</div>
+  <div class="btn-row">
+    <button class="btn" style="flex:1" onclick="goTo('workout')">Antrenmana Git</button>
+    <button class="btn secondary" style="flex:1" onclick="goTo('nutrition')">Yemek Ekle</button>
+  </div>
+</div>
+
+<!-- WORKOUT -->
+<div class="screen" id="screen-workout">
+  <h1 class="page-title">🏋️ Antrenman</h1>
+  <input type="date" id="dateInput" style="margin-bottom:12px">
+  <div class="day-tabs" id="dayTabs"></div>
+  <div id="workoutContent"></div>
+  <div id="workoutNotesSection"></div>
+</div>
+
+<!-- NUTRITION -->
+<div class="screen" id="screen-nutrition">
+  <h1 class="page-title">🥗 Beslenme</h1>
+  <div class="subtitle" id="nutritionDate"></div>
+
+  <div class="grid2" style="margin-bottom:10px">
+    <div class="card">
+      <div class="card-title">Kalori</div>
+      <div class="big-stat"><span id="nutKcal">0</span> <span class="of">/ <span id="nutKcalGoal">2800</span></span></div>
+      <div class="bar-bg"><div class="bar-fill" id="nutKcalBar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Protein</div>
+      <div class="big-stat"><span id="nutProtein">0</span>g <span class="of">/ <span id="nutProteinGoal">160</span>g</span></div>
+      <div class="bar-bg"><div class="bar-fill" id="nutProteinBar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Karbonhidrat</div>
+      <div class="big-stat"><span id="nutCarbs">0</span>g <span class="of">/ <span id="nutCarbsGoal">350</span>g</span></div>
+      <div class="bar-bg"><div class="bar-fill" id="nutCarbsBar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Yağ</div>
+      <div class="big-stat"><span id="nutFat">0</span>g <span class="of">/ <span id="nutFatGoal">80</span>g</span></div>
+      <div class="bar-bg"><div class="bar-fill" id="nutFatBar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="card remaining-card" id="remainingCard"></div>
+
+  <div class="group-title">🧠 Akıllı Beslenme Koçu</div>
+  <div class="card" id="coachAnalysisCard"></div>
+
+  <div class="group-title">🍗 Yiyecek Ara</div>
+  <div class="card">
+    <input type="text" id="foodSearchInput" placeholder="örn. tavuk, yumurta, pirinç...">
+    <div id="foodSearchResults" style="margin-top:8px"></div>
+  </div>
+
+  <div id="mealsContainer"></div>
+
+  <div class="group-title">🍽️ Öğün Önerileri</div>
+  <div class="card" id="mealSuggestionsCard"></div>
+
+  <div class="group-title">📅 Otomatik Günlük Beslenme Planı</div>
+  <div class="card">
+    <div class="btn-row" style="margin-bottom:10px">
+      <button class="btn small" style="flex:1" onclick="generateDailyPlan()">🔄 Plan Oluştur</button>
+      <button class="btn small secondary" style="flex:1" onclick="applyDailyPlan()">✓ Bugüne Uygula</button>
+    </div>
+    <div id="dailyPlanCard"></div>
+  </div>
+
+  <div class="group-title">🏠 Evde Olanlarım</div>
+  <div class="card">
+    <div class="ingredient-checklist" id="ingredientChecklist"></div>
+  </div>
+  <div id="homeIngredientRecipes"></div>
+
+  <div class="group-title">🧪 Supplement Takibi</div>
+  <div class="card" id="supplementCard"></div>
+
+  <div class="group-title">🛒 Alışveriş Listesi</div>
+  <div class="card">
+    <div class="btn-row" style="margin-bottom:8px">
+      <input type="text" id="shoppingItemInput" placeholder="Ürün ekle...">
+      <button class="btn small" onclick="addShoppingItem()">Ekle</button>
+    </div>
+    <button class="btn small secondary" style="width:100%; margin-bottom:8px" onclick="generateShoppingListFromPlan()">📅 Plandan Oluştur</button>
+    <div id="shoppingListItems"></div>
+  </div>
+
+  <div class="group-title">🍳 Akıllı Tarifler <span id="recipeModeLabel" style="font-size:11px; color:#888; text-transform:none; font-weight:400;"></span></div>
+  <div class="card" style="padding-bottom:6px">
+    <div class="filter-tabs" id="recipeCategoryTabs"></div>
+  </div>
+  <div id="recipesGrid"></div>
+
+  <div class="group-title">Hedefleri Düzenle</div>
+  <div class="card">
+    <div class="filter-tabs" id="goalModeTabs" style="margin-bottom:10px"></div>
+    <div class="settings-row">Kalori hedefi <input type="number" id="goalKcal" value="2800"></div>
+    <div class="settings-row">Protein (g) <input type="number" id="goalProtein" value="160"></div>
+    <div class="settings-row">Karbonhidrat (g) <input type="number" id="goalCarbs" value="350"></div>
+    <div class="settings-row">Yağ (g) <input type="number" id="goalFat" value="80"></div>
+    <button class="btn small" style="margin-top:8px; width:100%" onclick="saveGoals()">Hedefleri Kaydet</button>
+  </div>
+
+  <div class="group-title">➕ Kendi Yiyeceğini Ekle</div>
+  <div class="card">
+    <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr; gap:4px;">
+      <input type="text" id="customFoodName" placeholder="İsim">
+      <input type="number" id="customFoodKcal" placeholder="kcal">
+      <input type="number" id="customFoodProtein" placeholder="prot">
+      <input type="number" id="customFoodCarbs" placeholder="karb">
+      <input type="number" id="customFoodFat" placeholder="yağ">
+    </div>
+    <div class="subtitle" style="text-align:left; margin:4px 0 0;">Değerler 100 gram için girilir</div>
+    <button class="btn small secondary" style="width:100%; margin-top:8px" onclick="addCustomFood()">Veritabanına Ekle</button>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="screen" id="screen-progress">
+  <h1 class="page-title">📊 İlerleme</h1>
+
+  <div class="filter-tabs" id="progressFilterTabs"></div>
+
+  <div class="group-title">📊 Özet</div>
+  <div class="grid2" style="margin-bottom:14px">
+    <div class="card"><div class="card-title">🏋️ Antrenman Sayısı</div><div class="big-stat" id="statWorkoutDays">0</div></div>
+    <div class="card"><div class="card-title">📦 Toplam Set</div><div class="big-stat" id="statTotalSets">0</div></div>
+    <div class="card"><div class="card-title">📊 Toplam Hacim</div><div class="big-stat" id="statTotalVolume" style="font-size:16px">0kg</div></div>
+    <div class="card"><div class="card-title">🎯 Hedef Başarısı</div><div class="big-stat" id="statGoalSuccess">-</div></div>
+    <div class="card"><div class="card-title">🥩 Ort. Protein</div><div class="big-stat" id="statAvgProtein" style="font-size:16px">0g</div></div>
+    <div class="card"><div class="card-title">🔥 Ort. Kalori</div><div class="big-stat" id="statAvgKcal" style="font-size:16px">0</div></div>
+    <div class="card"><div class="card-title">💧 Ort. Su</div><div class="big-stat" id="statAvgWater" style="font-size:16px">0ml</div></div>
+  </div>
+
+  <div class="group-title">📈 Kilo Grafiği</div>
+  <div class="card">
+    <div id="weightChart"></div>
+    <div class="btn-row" style="margin:10px 0">
+      <input type="date" id="weightDate">
+      <input type="number" id="weightValue" placeholder="kg" step="0.1">
+      <button class="btn small" onclick="addWeightEntry()">Ekle</button>
+    </div>
+    <div id="weightList"></div>
+  </div>
+
+  <div class="group-title">💪 Hareket Gelişimi</div>
+  <div class="card">
+    <select id="exerciseSelect" style="width:100%; margin-bottom:8px; background:#0f1115; color:#f0f0f0; border:1px solid #2a2e38; border-radius:8px; padding:8px;"></select>
+    <div class="metric-tabs" id="metricTabs"></div>
+    <div id="exerciseChart"></div>
+    <div id="exerciseChartSummary" style="font-size:12px; color:#888; margin-top:6px;"></div>
+  </div>
+
+  <div class="group-title">🗓️ Haftalık Rapor</div>
+  <div class="card" id="weeklyReportCard"></div>
+
+  <div class="group-title">💧 Su Geçmişi (son 7 gün)</div>
+  <div class="card" id="waterHistoryCard"></div>
+
+  <div class="group-title">📸 Vücut Fotoğrafları</div>
+  <div class="card">
+    <input type="date" id="photoDateInput" style="margin-bottom:10px">
+    <div class="grid3">
+      <div class="photo-upload-col">
+        <div class="photo-cat-label">Ön</div>
+        <input type="file" accept="image/*" id="photoInputFront">
+      </div>
+      <div class="photo-upload-col">
+        <div class="photo-cat-label">Yan</div>
+        <input type="file" accept="image/*" id="photoInputSide">
+      </div>
+      <div class="photo-upload-col">
+        <div class="photo-cat-label">Arka</div>
+        <input type="file" accept="image/*" id="photoInputBack">
+      </div>
+    </div>
+    <div class="subtitle" style="text-align:left; margin:6px 0 0;">Fotoğraflar otomatik küçültülüp sıkıştırılarak saklanır</div>
+    <div id="photosGallery" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- WATER (accessed via home quick action or nav) -->
+<div class="screen" id="screen-water">
+  <h1 class="page-title">💧 Su Takibi</h1>
+  <div class="subtitle" id="waterDate"></div>
+  <div class="card">
+    <div class="water-drop">💧</div>
+    <div class="big-stat" style="text-align:center; font-size:26px"><span id="waterTotal">0</span>ml <span class="of">/ <span id="waterGoalDisplay">3000</span>ml</span></div>
+    <div class="bar-bg"><div class="bar-fill" id="waterBar" style="width:0%"></div></div>
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn secondary" style="flex:1" onclick="addWater(-250)">-250ml</button>
+      <button class="btn" style="flex:1" onclick="addWater(250)">+250ml</button>
+    </div>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn secondary" style="flex:1" onclick="addWater(500)">+500ml</button>
+      <button class="btn secondary" style="flex:1" onclick="addWater(1000)">+1L</button>
+    </div>
+  </div>
+  <div class="group-title">Günlük hedef</div>
+  <div class="card">
+    <div class="settings-row">Hedef (ml) <input type="number" id="goalWater" value="3000"></div>
+    <button class="btn small" style="margin-top:8px; width:100%" onclick="saveWaterGoal()">Kaydet</button>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<div class="bottom-nav">
+  <button class="nav-btn active" data-screen="home" onclick="goTo('home')"><span class="icon">🏠</span>Ana Sayfa</button>
+  <button class="nav-btn" data-screen="workout" onclick="goTo('workout')"><span class="icon">🏋️</span>Antrenman</button>
+  <button class="nav-btn" data-screen="nutrition" onclick="goTo('nutrition')"><span class="icon">🥗</span>Beslenme</button>
+  <button class="nav-btn" data-screen="water" onclick="goTo('water')"><span class="icon">💧</span>Su</button>
+  <button class="nav-btn" data-screen="progress" onclick="goTo('progress')"><span class="icon">📊</span>İlerleme</button>
+</div>
+
+<!-- Fixed export/import bar -->
+<div style="position:fixed; top:0; left:0; right:0; background:#14161c; border-bottom:1px solid #2a2e38; padding:8px 12px; padding-top:calc(8px + env(safe-area-inset-top)); display:flex; gap:8px; z-index:60; align-items:center;">
+  <span id="autoSaveDot" title="Otomatik kayıt durumu" style="width:8px; height:8px; border-radius:50%; background:#6bff8f; flex-shrink:0;"></span>
+  <div style="flex:1; font-size:11px; color:#888" id="statusLine"></div>
+  <button class="btn small secondary" onclick="openImportModal()">📥 İçe Aktar</button>
+  <button class="btn small" onclick="exportData()">📤 Dışa Aktar</button>
+</div>
+<div style="height:40px"></div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal-box">
+    <div style="font-weight:700; margin-bottom:8px; color:#ff6b35;">Yedeği geri yükle</div>
+    <div style="font-size:12px; color:#888; margin-bottom:10px;">Daha önce "Dışa Aktar" ile aldığın kodu buraya yapıştır.</div>
+    <textarea id="importText" placeholder="Buraya yapıştır..."></textarea>
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn secondary" style="flex:1" onclick="closeImportModal()">Vazgeç</button>
+      <button class="btn" style="flex:1" onclick="confirmImport()">Yükle</button>
+    </div>
+  </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal-box">
+    <div style="font-weight:700; margin-bottom:8px; color:#ff6b35;">Yedek kodun</div>
+    <div style="font-size:12px; color:#888; margin-bottom:10px;">Bu kodu kopyala ve Notlar uygulamana yapıştır. Uygulamayı tekrar açtığında "İçe Aktar" ile geri yükleyebilirsin.</div>
+    <textarea id="exportText" readonly></textarea>
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn secondary" style="flex:1" onclick="closeExportModal()">Kapat</button>
+      <button class="btn" style="flex:1" id="copyExportBtn" onclick="copyExportText()">📋 Kopyala</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== PROGRAM ===================== */
+const PROGRAM = {
+  "Pazartesi": { groups: [
+    { name: "Göğüs", exercises: ["Smith Machine Bench Press", "Chest Press", "Pec Deck Fly"] },
+    { name: "Omuz", exercises: ["Shoulder Press", "Lateral Raise", "Rear Delt Fly"] },
+    { name: "Triceps", exercises: ["Rope Pushdown", "Overhead Dumbbell Extension", "Assisted Dips"] }
+  ]},
+  "Salı": { groups: [
+    { name: "Sırt", exercises: ["Lat Pulldown", "Machine Row", "Cable Row"] },
+    { name: "Biceps", exercises: ["Preacher Curl", "African Curl", "Hammer Curl"] },
+    { name: "Karın", exercises: ["Weighted Leg Raise", "Cable Crunch"] }
+  ]},
+  "Çarşamba": { groups: [
+    { name: "Bacak", exercises: ["Leg Press", "Leg Curl", "Leg Extension", "Calf Raise"] },
+    { name: "Biceps", exercises: ["Incline Dumbbell Curl"] },
+    { name: "Triceps", exercises: ["Rope Pushdown"] },
+    { name: "Karın", exercises: ["Cable Crunch", "Weighted Leg Raise"] }
+  ]},
+  "Perşembe": { rest: true },
+  "Cuma": { groups: [
+    { name: "Göğüs", exercises: ["Smith Bench Press", "Chest Press", "Pec Deck"] },
+    { name: "Sırt", exercises: ["Lat Pulldown", "Lever Cross (Çapraz) Lat Pulldown", "Machine Row", "Cable Row"] }
+  ]},
+  "Cumartesi": { groups: [
+    { name: "Omuz", exercises: ["Shoulder Press", "Lateral Raise", "Rear Delt Fly"] },
+    { name: "Biceps", exercises: ["Preacher Curl", "African Curl", "Hammer Curl"] },
+    { name: "Triceps", exercises: ["Rope Pushdown", "Overhead Extension", "Assisted Dips"] }
+  ]},
+  "Pazar": { rest: true }
+};
+const DAYS = Object.keys(PROGRAM);
+const EXERCISE_NAME_BY_SLUG = {};
+Object.values(PROGRAM).forEach(day => {
+  if (day.groups) day.groups.forEach(g => g.exercises.forEach(ex => { EXERCISE_NAME_BY_SLUG[slugify(ex)] = ex; }));
+});
+
+/* ===================== FOOD DATABASE ===================== */
+const FOOD_DATABASE = [
+  { name: 'Tavuk Göğsü', kcal: 165, protein: 31, carbs: 0, fat: 3.6 },
+  { name: 'Tavuk Budu', kcal: 209, protein: 26, carbs: 0, fat: 10.9 },
+  { name: 'Dana Kıyma (yağsız)', kcal: 217, protein: 26, carbs: 0, fat: 12 },
+  { name: 'Somon', kcal: 208, protein: 20, carbs: 0, fat: 13 },
+  { name: 'Ton Balığı (suda)', kcal: 116, protein: 26, carbs: 0, fat: 1 },
+  { name: 'Yumurta (bütün)', kcal: 155, protein: 13, carbs: 1.1, fat: 11 },
+  { name: 'Yumurta Beyazı', kcal: 52, protein: 11, carbs: 0.7, fat: 0.2 },
+  { name: 'Süzme Yoğurt', kcal: 59, protein: 10, carbs: 3.6, fat: 0.4 },
+  { name: 'Yoğurt (tam yağlı)', kcal: 61, protein: 3.5, carbs: 4.7, fat: 3.3 },
+  { name: 'Süt (yarım yağlı)', kcal: 50, protein: 3.4, carbs: 4.9, fat: 1.6 },
+  { name: 'Beyaz Peynir', kcal: 264, protein: 18, carbs: 2, fat: 21 },
+  { name: 'Lor Peyniri', kcal: 98, protein: 11, carbs: 3.4, fat: 4.3 },
+  { name: 'Whey Protein Tozu', kcal: 400, protein: 80, carbs: 8, fat: 6 },
+  { name: 'Pirinç (pişmiş)', kcal: 130, protein: 2.7, carbs: 28, fat: 0.3 },
+  { name: 'Bulgur (pişmiş)', kcal: 83, protein: 3.1, carbs: 18.6, fat: 0.2 },
+  { name: 'Makarna (pişmiş)', kcal: 158, protein: 5.8, carbs: 31, fat: 0.9 },
+  { name: 'Ekmek (tam buğday)', kcal: 247, protein: 13, carbs: 41, fat: 3.4 },
+  { name: 'Yulaf', kcal: 389, protein: 17, carbs: 66, fat: 7 },
+  { name: 'Cream of Rice', kcal: 370, protein: 7, carbs: 82, fat: 0.5 },
+  { name: 'Patates (haşlanmış)', kcal: 87, protein: 1.9, carbs: 20, fat: 0.1 },
+  { name: 'Tatlı Patates', kcal: 86, protein: 1.6, carbs: 20, fat: 0.1 },
+  { name: 'Muz', kcal: 89, protein: 1.1, carbs: 23, fat: 0.3 },
+  { name: 'Elma', kcal: 52, protein: 0.3, carbs: 14, fat: 0.2 },
+  { name: 'Badem', kcal: 579, protein: 21, carbs: 22, fat: 50 },
+  { name: 'Ceviz', kcal: 654, protein: 15, carbs: 14, fat: 65 },
+  { name: 'Fıstık Ezmesi', kcal: 588, protein: 25, carbs: 20, fat: 50 },
+  { name: 'Zeytinyağı', kcal: 884, protein: 0, carbs: 0, fat: 100 },
+  { name: 'Avokado', kcal: 160, protein: 2, carbs: 8.5, fat: 14.7 },
+  { name: 'Brokoli', kcal: 34, protein: 2.8, carbs: 7, fat: 0.4 },
+  { name: 'Mercimek (pişmiş)', kcal: 116, protein: 9, carbs: 20, fat: 0.4 },
+  { name: 'Nohut (pişmiş)', kcal: 164, protein: 8.9, carbs: 27, fat: 2.6 },
+];
+
+/* ===================== RECIPE DATABASE ===================== */
+// modes: which goal mode(s) this recipe fits best — 'bulk' | 'maintenance' | 'cut' | 'any'
+const RECIPES = [
+  { id: 'bulk-shake', name: '🔥 Bulk Shake', category: 'gainer', modes: ['bulk'], kcal: 750, protein: 50, carbs: 90, fat: 18, prepMinutes: 3,
+    ingredients: ['1 ölçek whey', '1 ölçek gainer', '1 muz', '300ml tam yağlı süt'], keyIngredients: ['whey', 'gainer', 'muz', 'sut'],
+    steps: ['Tüm malzemeleri blendera koy', '30 saniye karıştır', 'Hemen iç'] },
+  { id: 'mass-gainer-oat', name: '💪 Yulaflı Gainer Shake', category: 'gainer', modes: ['bulk'], kcal: 680, protein: 42, carbs: 95, fat: 14, prepMinutes: 3,
+    ingredients: ['1 ölçek gainer', '50g yulaf', '1 kaşık fıstık ezmesi', '300ml süt'], keyIngredients: ['gainer', 'yulaf', 'fistik-ezmesi', 'sut'],
+    steps: ['Yulafı süt ile blendera koy', 'Gainer ve fıstık ezmesini ekle', '45 saniye karıştır'] },
+  { id: 'whey-water', name: '🥤 Basit Whey Shake', category: 'whey', modes: ['cut', 'maintenance'], kcal: 160, protein: 30, carbs: 5, fat: 2, prepMinutes: 1,
+    ingredients: ['1 ölçek whey', '250ml su', 'buz (istersen)'], keyIngredients: ['whey'],
+    steps: ['Shake up ile whey ve suyu çalkala', 'İstersen buz ekle'] },
+  { id: 'whey-banana', name: '🍌 Whey + Muz Smoothie', category: 'whey', modes: ['maintenance', 'bulk'], kcal: 300, protein: 32, carbs: 35, fat: 4, prepMinutes: 3,
+    ingredients: ['1 ölçek whey', '1 muz', '200ml süt'], keyIngredients: ['whey', 'muz', 'sut'],
+    steps: ['Muzu doğrayıp blendera koy', 'Whey ve sütü ekle', '30 saniye karıştır'] },
+  { id: 'whey-oats-pb', name: '🥜 Whey + Yulaf + Fıstık Ezmesi', category: 'whey', modes: ['bulk', 'maintenance'], kcal: 520, protein: 45, carbs: 50, fat: 16, prepMinutes: 4,
+    ingredients: ['1 ölçek whey', '60g yulaf', '1 kaşık fıstık ezmesi', '250ml süt'], keyIngredients: ['whey', 'yulaf', 'fistik-ezmesi', 'sut'],
+    steps: ['Yulafı sütle ıslat (mikrodalgada 1 dk ya da bir gece buzdolabında)', 'Whey ve fıstık ezmesini karıştır'] },
+  { id: 'cor-whey', name: '🍚 Cream of Rice + Whey', category: 'creamOfRice', modes: ['bulk', 'maintenance'], kcal: 480, protein: 40, carbs: 70, fat: 4, prepMinutes: 5,
+    ingredients: ['60g Cream of Rice', '1 ölçek whey', '250ml su', '1 tatlı kaşığı bal (opsiyonel)'], keyIngredients: ['cream-of-rice', 'whey'],
+    steps: ['Cream of Rice\'ı kaynar suda 2-3 dk pişir', 'Hafif soğuyunca whey\'i karıştır (kaynarken ekleme)', 'İstersen bal ekle'] },
+  { id: 'cor-bulk', name: '🍚 Yüksek Kalorili Cream of Rice', category: 'creamOfRice', modes: ['bulk'], kcal: 650, protein: 45, carbs: 95, fat: 10, prepMinutes: 6,
+    ingredients: ['80g Cream of Rice', '1 ölçek whey', '1 kaşık fıstık ezmesi', '300ml tam yağlı süt'], keyIngredients: ['cream-of-rice', 'whey', 'fistik-ezmesi', 'sut'],
+    steps: ['Cream of Rice\'ı süt ile pişir', 'Hafif soğuyunca whey ve fıstık ezmesini karıştır'] },
+  { id: 'chicken-rice', name: '🍗 Tavuk + Pilav + Brokoli', category: 'chicken', modes: ['maintenance', 'bulk'], kcal: 550, protein: 48, carbs: 60, fat: 10, prepMinutes: 25,
+    ingredients: ['150g tavuk göğsü', '150g pişmiş pirinç', '100g brokoli', '1 tatlı kaşığı zeytinyağı'], keyIngredients: ['tavuk', 'pirinc'],
+    steps: ['Tavuğu baharatlayıp ızgara/tavada pişir', 'Pirinci haşla', 'Brokoliyi buharda pişir', 'Hepsini tabakta birleştir, zeytinyağı gezdir'] },
+  { id: 'chicken-sweet-potato', name: '🍗 Tavuk + Tatlı Patates', category: 'chicken', modes: ['cut', 'maintenance'], kcal: 420, protein: 45, carbs: 38, fat: 8, prepMinutes: 30,
+    ingredients: ['150g tavuk göğsü', '200g tatlı patates', 'yeşillik salata'], keyIngredients: ['tavuk', 'tatli-patates'],
+    steps: ['Tatlı patatesi fırında 200°C\'de 25 dk pişir', 'Tavuğu tavada pişir', 'Yeşillikle servis et'] },
+  { id: 'chicken-wrap', name: '🌯 Yüksek Proteinli Tavuk Wrap', category: 'chicken', modes: ['cut'], kcal: 380, protein: 40, carbs: 30, fat: 10, prepMinutes: 15,
+    ingredients: ['120g tavuk göğsü', 'tam buğday lavaş', 'yoğurt sos', 'marul, domates'], keyIngredients: ['tavuk', 'yogurt'],
+    steps: ['Tavuğu ince şeritler halinde pişir', 'Lavaşı yoğurt sos ile sıvazla', 'Tavuk ve sebzeleri sarıp rulo yap'] },
+  { id: 'egg-toast', name: '🍳 Yüksek Proteinli Kahvaltı', category: 'breakfast', modes: ['any'], kcal: 420, protein: 30, carbs: 35, fat: 16, prepMinutes: 10,
+    ingredients: ['3 yumurta', '2 dilim tam buğday ekmek', '1 dilim beyaz peynir'], keyIngredients: ['yumurta', 'ekmek'],
+    steps: ['Yumurtaları çırpıp pişir (omlet ya da sahanda)', 'Ekmeği kızart', 'Peynirle servis et'] },
+  { id: 'greek-yogurt-bowl', name: '🥣 Süzme Yoğurt Kase', category: 'breakfast', modes: ['cut', 'maintenance'], kcal: 320, protein: 28, carbs: 30, fat: 8, prepMinutes: 5,
+    ingredients: ['200g süzme yoğurt', '1 muz', '20g badem', '1 tatlı kaşığı bal'], keyIngredients: ['yogurt', 'muz', 'badem'],
+    steps: ['Yoğurdu kaseye al', 'Muzu dilimle üzerine ekle', 'Badem ve bal ile tamamla'] },
+  { id: 'oat-egg-breakfast', name: '🥞 Yulaf + Yumurta Kahvaltısı', category: 'breakfast', modes: ['bulk'], kcal: 550, protein: 35, carbs: 60, fat: 16, prepMinutes: 12,
+    ingredients: ['60g yulaf', '3 yumurta', '1 muz', '1 kaşık fıstık ezmesi'], keyIngredients: ['yulaf', 'yumurta', 'muz', 'fistik-ezmesi'],
+    steps: ['Yulafı sütle veya suyla pişir', 'Yumurtaları ayrı pişir', 'Muz ve fıstık ezmesiyle yulafı tamamla'] },
+  { id: 'bulk-pasta', name: '🍝 Yüksek Kalorili Bulk Makarna', category: 'bulk', modes: ['bulk'], kcal: 780, protein: 45, carbs: 95, fat: 22, prepMinutes: 25,
+    ingredients: ['150g kuru makarna', '150g dana kıyma', 'zeytinyağı', 'rendelenmiş peynir'], keyIngredients: ['makarna', 'kiyma'],
+    steps: ['Makarnayı haşla', 'Kıymayı soğan ve baharatla kavur', 'Makarna ile karıştır, üzerine peynir rendele'] },
+  { id: 'bulk-rice-beef', name: '🍚 Kıyma + Pirinç Bulk Tabağı', category: 'bulk', modes: ['bulk'], kcal: 720, protein: 50, carbs: 80, fat: 18, prepMinutes: 25,
+    ingredients: ['180g dana kıyma', '200g pişmiş pirinç', '1 kaşık zeytinyağı', 'avokado'], keyIngredients: ['kiyma', 'pirinc'],
+    steps: ['Kıymayı tavada kavur', 'Pirinci haşla', 'Tabakta birleştir, avokado ekle'] },
+  { id: 'bulk-nut-butter-toast', name: '🍞 Fıstık Ezmeli Bulk Tost', category: 'bulk', modes: ['bulk'], kcal: 600, protein: 25, carbs: 65, fat: 26, prepMinutes: 5,
+    ingredients: ['3 dilim tam buğday ekmek', '2 kaşık fıstık ezmesi', '1 muz'], keyIngredients: ['ekmek', 'fistik-ezmesi', 'muz'],
+    steps: ['Ekmekleri kızart', 'Fıstık ezmesini sür', 'Üzerine muz dilimle'] },
+  { id: 'cut-chicken-salad', name: '🥗 Düşük Kalorili Tavuk Salata', category: 'cut', modes: ['cut'], kcal: 320, protein: 38, carbs: 15, fat: 10, prepMinutes: 15,
+    ingredients: ['150g tavuk göğsü', 'karışık yeşillik', 'salatalık, domates', '1 tatlı kaşığı zeytinyağı'], keyIngredients: ['tavuk'],
+    steps: ['Tavuğu izgarada pişir, dilimle', 'Sebzeleri doğrayıp karıştır', 'Zeytinyağı gezdir'] },
+  { id: 'cut-tuna-salad', name: '🐟 Ton Balıklı Cut Salata', category: 'cut', modes: ['cut'], kcal: 280, protein: 32, carbs: 12, fat: 10, prepMinutes: 8,
+    ingredients: ['1 kutu ton balığı (suda)', 'yeşillik', 'salatalık', 'limon'], keyIngredients: ['ton-balik'],
+    steps: ['Ton balığının suyunu süz', 'Sebzelerle karıştır', 'Limon sık'] },
+  { id: 'cut-egg-white-oat', name: '🍳 Yumurta Beyazlı Cut Kahvaltı', category: 'cut', modes: ['cut'], kcal: 260, protein: 28, carbs: 25, fat: 4, prepMinutes: 10,
+    ingredients: ['5 yumurta beyazı', '30g yulaf', 'tarçın'], keyIngredients: ['yumurta', 'yulaf'],
+    steps: ['Yumurta beyazlarını çırpıp pişir', 'Yulafı ayrı pişir, tarçın serp'] },
+  { id: 'lunch-chicken-box', name: '🍱 Tavuklu Öğle Kutusu', category: 'lunch', modes: ['any'], kcal: 520, protein: 42, carbs: 55, fat: 12, prepMinutes: 20,
+    ingredients: ['130g tavuk göğsü', '150g bulgur', 'karışık sebze'], keyIngredients: ['tavuk'],
+    steps: ['Tavuğu baharatlayıp pişir', 'Bulguru haşla', 'Sebzeleri buharda pişirip birleştir'] },
+  { id: 'lunch-tuna-pasta', name: '🐟 Ton Balıklı Makarna Salatası', category: 'lunch', modes: ['maintenance', 'cut'], kcal: 460, protein: 34, carbs: 50, fat: 12, prepMinutes: 15,
+    ingredients: ['100g kuru makarna', '1 kutu ton balığı', 'zeytinyağı', 'salatalık'], keyIngredients: ['makarna', 'ton-balik'],
+    steps: ['Makarnayı haşla, soğut', 'Ton balığı ve doğranmış sebzelerle karıştır', 'Zeytinyağı ile tatlandır'] },
+  { id: 'dinner-chicken-thigh', name: '🍗 Fırında Tavuk But + Sebze', category: 'dinner', modes: ['any'], kcal: 480, protein: 40, carbs: 25, fat: 22, prepMinutes: 40,
+    ingredients: ['200g tavuk but', 'fırınlık sebze karışımı', 'zeytinyağı'], keyIngredients: ['tavuk'],
+    steps: ['Tavuğu ve sebzeleri baharatla', 'Fırında 200°C\'de 35-40 dk pişir'] },
+  { id: 'dinner-salmon-bulgur', name: '🐟 Somon + Bulgur', category: 'dinner', modes: ['bulk', 'maintenance'], kcal: 560, protein: 38, carbs: 45, fat: 22, prepMinutes: 25,
+    ingredients: ['150g somon', '150g bulgur', 'limon', 'zeytinyağı'], keyIngredients: [],
+    steps: ['Somonu tavada ya da fırında pişir', 'Bulguru haşla', 'Limon sıkıp servis et'] },
+  { id: 'snack-almond-apple', name: '🍎 Badem + Elma', category: 'snack', modes: ['cut', 'maintenance'], kcal: 200, protein: 6, carbs: 25, fat: 10, prepMinutes: 1,
+    ingredients: ['1 elma', '20g badem'], keyIngredients: ['badem'],
+    steps: ['Yıka, doğrudan tüket'] },
+  { id: 'snack-yogurt-honey', name: '🍯 Yoğurt + Bal', category: 'snack', modes: ['any'], kcal: 220, protein: 16, carbs: 28, fat: 4, prepMinutes: 2,
+    ingredients: ['200g süzme yoğurt', '1 tatlı kaşığı bal'], keyIngredients: ['yogurt'],
+    steps: ['Yoğurdu kaseye al', 'Bal gezdir'] },
+  { id: 'night-cottage-yogurt', name: '🌙 Yavaş Sindirimli Gece Kasesi', category: 'night', modes: ['any'], kcal: 260, protein: 24, carbs: 20, fat: 8, prepMinutes: 3,
+    ingredients: ['200g süzme yoğurt (yavaş sindirim)', '1 kaşık fıstık ezmesi', 'tarçın'], keyIngredients: ['yogurt', 'fistik-ezmesi'],
+    steps: ['Yoğurdu kaseye al', 'Fıstık ezmesi ve tarçın ekle'] },
+  { id: 'night-milk-pb', name: '🥛 Fıstık Ezmeli Sıcak Süt', category: 'night', modes: ['bulk', 'maintenance'], kcal: 320, protein: 14, carbs: 22, fat: 18, prepMinutes: 5,
+    ingredients: ['300ml tam yağlı süt', '1 kaşık fıstık ezmesi'], keyIngredients: ['sut', 'fistik-ezmesi'],
+    steps: ['Sütü ılıtın (opsiyonel)', 'Fıstık ezmesini karıştırın'] },
+];
+const RECIPE_CATEGORIES = {
+  whey: 'Whey', gainer: 'Gainer', creamOfRice: 'Cream of Rice', chicken: 'Tavuklu',
+  breakfast: 'Kahvaltılar', lunch: 'Öğle Yemekleri', dinner: 'Akşam Yemekleri',
+  snack: 'Ara Öğünler', night: 'Gece Öğünleri', bulk: 'Yüksek Kalorili Bulk', cut: 'Düşük Kalorili Cut'
+};
+const INGREDIENT_OPTIONS = [
+  { key: 'whey', label: 'Whey' }, { key: 'gainer', label: 'Gainer' }, { key: 'muz', label: 'Muz' },
+  { key: 'sut', label: 'Süt' }, { key: 'yumurta', label: 'Yumurta' }, { key: 'pirinc', label: 'Pirinç' },
+  { key: 'tavuk', label: 'Tavuk' }, { key: 'yulaf', label: 'Yulaf' }, { key: 'fistik-ezmesi', label: 'Fıstık Ezmesi' },
+  { key: 'tatli-patates', label: 'Tatlı Patates' }, { key: 'ton-balik', label: 'Ton Balığı' }, { key: 'yogurt', label: 'Süzme Yoğurt' },
+  { key: 'badem', label: 'Badem' }, { key: 'ekmek', label: 'Ekmek' }, { key: 'kiyma', label: 'Kıyma' },
+  { key: 'makarna', label: 'Makarna' }, { key: 'cream-of-rice', label: 'Cream of Rice' },
+];
+
+
+
+
+/* ===================== STATE ===================== */
+let STATE = {
+  workouts: {},   // "YYYY-MM-DD|Gün" -> { exSlug: { sets: [{kg,reps,rir}, ...], completed:boolean } }
+  meals: {},      // "YYYY-MM-DD" -> { breakfast:[], lunch:[], dinner:[], snack:[] }, each item {name,kcal,protein,carbs,fat}
+  water: {},      // "YYYY-MM-DD" -> ml (number)
+  weightLog: [],  // [{date, kg}]
+  customFoods: [], // user-added foods, same shape as FOOD_DATABASE entries
+  workoutNotes: {}, // "YYYY-MM-DD|Gün" -> note text
+  photos: [],      // [{id, date, category: 'front'|'side'|'back', dataUrl}]
+  creatine: {},    // "YYYY-MM-DD" -> boolean
+  favoriteRecipes: [], // [recipeId, ...]
+  reminders: { time: '20:00', enabled: { creatine: true, water: true, protein: true } },
+  homeIngredients: [], // [ingredientKey, ...] selected in "Evde Olanlarım"
+  supplements: {}, // "YYYY-MM-DD" -> { whey:bool, gainer:bool, omega3:bool, d3k2:bool, multivitamin:bool }
+  targetWeight: null, // number | null
+  shoppingList: [], // [{id, text, checked}]
+  dailyPlans: {}, // "YYYY-MM-DD" -> [{slotKey, slotLabel, recipeId}]
+  goals: {
+    kcal: 2800, protein: 160, carbs: 350, fat: 80, water: 3000,
+    mode: 'maintenance',                                  // 'bulk' | 'maintenance' | 'cut'
+    baseline: { kcal: 2800, protein: 160, carbs: 350, fat: 80 } // reference "maintenance" numbers the modes are computed from
+  }
+};
+
+function migrateGoals() {
+  if (!STATE.goals.mode) STATE.goals.mode = 'maintenance';
+  if (!STATE.goals.baseline) {
+    STATE.goals.baseline = { kcal: STATE.goals.kcal, protein: STATE.goals.protein, carbs: STATE.goals.carbs, fat: STATE.goals.fat };
+  }
+  if (!STATE.customFoods) STATE.customFoods = [];
+  if (!STATE.workoutNotes) STATE.workoutNotes = {};
+  if (!STATE.photos) STATE.photos = [];
+  if (!STATE.creatine) STATE.creatine = {};
+  if (!STATE.favoriteRecipes) STATE.favoriteRecipes = [];
+  if (!STATE.reminders) STATE.reminders = { time: '20:00', enabled: { creatine: true, water: true, protein: true } };
+  if (!STATE.homeIngredients) STATE.homeIngredients = [];
+  if (!STATE.supplements) STATE.supplements = {};
+  if (STATE.targetWeight === undefined) STATE.targetWeight = null;
+  if (!STATE.shoppingList) STATE.shoppingList = [];
+  if (!STATE.dailyPlans) STATE.dailyPlans = {};
+}
+
+
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function getDayNameFromDate(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  const map = ["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
+  return map[d.getDay()];
+}
+function slugify(str) {
+  return str.toLowerCase()
+    .replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u')
+    .replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+}
+
+let currentDate = todayStr();
+let currentDay = getDayNameFromDate(currentDate);
+
+/* ===================== NAV ===================== */
+function goTo(screen) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + screen).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.screen === screen));
+  if (screen === 'home') renderHome();
+  if (screen === 'workout') renderWorkout();
+  if (screen === 'nutrition') renderNutrition();
+  if (screen === 'progress') renderProgress();
+  if (screen === 'water') renderWater();
+}
+
+/* ===================== WORKOUT ===================== */
+const dateInput = document.getElementById('dateInput');
+dateInput.value = currentDate;
+dateInput.addEventListener('change', () => {
+  currentDate = dateInput.value;
+  currentDay = getDayNameFromDate(currentDate);
+  renderWorkoutTabs();
+  renderWorkout();
+});
+
+function renderWorkoutTabs() {
+  const tabsEl = document.getElementById('dayTabs');
+  tabsEl.innerHTML = '';
+  DAYS.forEach(day => {
+    const tab = document.createElement('div');
+    tab.className = 'day-tab' + (day === currentDay ? ' active' : '');
+    tab.textContent = day;
+    tab.onclick = () => { currentDay = day; renderWorkoutTabs(); renderWorkout(); };
+    tabsEl.appendChild(tab);
+  });
+}
+
+function workoutKey() { return `${currentDate}|${currentDay}`; }
+
+/* ---- Data migration: old fixed s1kg/s1reps/s2kg/s2reps -> dynamic sets[] ---- */
+function migrateWorkoutEntry(entry) {
+  if (entry && Array.isArray(entry.sets)) return entry;
+  const sets = [];
+  if (entry.s1kg || entry.s1reps) sets.push({ kg: entry.s1kg || '', reps: entry.s1reps || '', rir: '' });
+  if (entry.s2kg || entry.s2reps) sets.push({ kg: entry.s2kg || '', reps: entry.s2reps || '', rir: '' });
+  if (sets.length === 0) sets.push({ kg: '', reps: '', rir: '' }, { kg: '', reps: '', rir: '' });
+  return { sets };
+}
+function migrateAllWorkouts() {
+  Object.keys(STATE.workouts).forEach(key => {
+    const dayData = STATE.workouts[key];
+    Object.keys(dayData).forEach(exSlug => {
+      dayData[exSlug] = migrateWorkoutEntry(dayData[exSlug]);
+    });
+  });
+}
+
+/* ---- Progressive overload / PR / 1RM / history helpers ---- */
+function n(v) { return Number(v) || 0; }
+
+function epley1RM(kg, reps) {
+  const w = n(kg), r = n(reps);
+  if (w <= 0 || r <= 0) return 0;
+  return w * (1 + r / 30);
+}
+
+function getAllEntriesForExercise(exSlug) {
+  const entries = [];
+  Object.keys(STATE.workouts).forEach(key => {
+    const date = key.split('|')[0];
+    const exData = STATE.workouts[key][exSlug];
+    if (exData && exData.sets && exData.sets.some(s => s.kg || s.reps)) {
+      entries.push({ date, sets: exData.sets });
+    }
+  });
+  entries.sort((a, b) => a.date.localeCompare(b.date));
+  return entries;
+}
+
+function entryVolume(e) {
+  return (e.sets || []).reduce((sum, s) => sum + n(s.kg) * n(s.reps), 0);
+}
+function entryMaxWeight(e) {
+  return (e.sets || []).reduce((max, s) => Math.max(max, n(s.kg)), 0);
+}
+function entryBest1RM(e) {
+  let best = 0;
+  (e.sets || []).forEach(s => { const rm = epley1RM(s.kg, s.reps); if (rm > best) best = rm; });
+  return best;
+}
+function entryBestSet(e) {
+  let best = null;
+  (e.sets || []).forEach(s => { if (n(s.kg) > 0 && (!best || n(s.kg) > n(best.kg))) best = s; });
+  return best;
+}
+function formatSetsList(e) {
+  if (!e) return '-';
+  const withData = e.sets.filter(s => s.kg || s.reps);
+  if (withData.length === 0) return '-';
+  return withData.map(s => `${s.kg || '-'}kg × ${s.reps || '-'}${s.rir ? ` (RIR ${s.rir})` : ''}`).join('<br>');
+}
+
+function getExerciseStats(exSlug) {
+  const all = getAllEntriesForExercise(exSlug);
+  const todayEntry = all.find(e => e.date === currentDate);
+  const priorEntries = all.filter(e => e.date !== currentDate);
+  const last = priorEntries.length ? priorEntries[priorEntries.length - 1] : null;
+
+  let pr = null;
+  priorEntries.forEach(e => { const w = entryMaxWeight(e); if (w > 0 && (!pr || w > pr)) pr = w; });
+
+  let prOneRM = null;
+  priorEntries.forEach(e => { const rm = entryBest1RM(e); if (rm > 0 && (!prOneRM || rm > prOneRM)) prOneRM = rm; });
+
+  let totalVolume = 0;
+  all.forEach(e => { totalVolume += entryVolume(e); });
+
+  let change = null;
+  if (last && todayEntry) {
+    const lastMax = entryMaxWeight(last), todayMax = entryMaxWeight(todayEntry);
+    if (lastMax > 0 && todayMax > 0) {
+      change = { abs: +(todayMax - lastMax).toFixed(2), pct: +((todayMax - lastMax) / lastMax * 100).toFixed(1) };
+    }
+  }
+
+  let isNewPR = false, prevPRForBanner = null;
+  const todayMax = todayEntry ? entryMaxWeight(todayEntry) : 0;
+  if (todayEntry && todayMax > 0 && (!pr || todayMax > pr)) { isNewPR = true; prevPRForBanner = pr; }
+
+  const currentPR = Math.max(pr || 0, todayMax) || null;
+  const todayOneRM = todayEntry ? entryBest1RM(todayEntry) : 0;
+  const currentOneRM = Math.max(prOneRM || 0, todayOneRM) || null;
+
+  // RIR-aware next target suggestion, based on best (heaviest) set of the most recent session
+  const basis = todayEntry || last;
+  let nextTarget = null;
+  if (basis) {
+    const bestSet = entryBestSet(basis);
+    if (bestSet) {
+      const w = n(bestSet.kg), r = n(bestSet.reps) || 0, rir = bestSet.rir;
+      if (rir === '0' || rir === '1') {
+        nextTarget = `${w + 2.5}kg × ${r || 8}-${(r || 8) + 2} (son sette failure'a çok yakındın, ağırlığı artır)`;
+      } else if (rir === '2') {
+        nextTarget = `${w}kg × ${r + 1}+ tekrar dene — RIR 1'e düşünce ${w + 2.5}kg'a çık`;
+      } else if (rir === '3' || rir === '4+') {
+        nextTarget = `${w + 5}kg × ${r || 8}-${(r || 8) + 2} (fazla rezervin vardı, daha rahat artırabilirsin)`;
+      } else if (r >= 10) {
+        nextTarget = `${w + 2.5}kg × 8-10`;
+      } else if (r > 0) {
+        nextTarget = `${w}kg × ${r + 1}+ tekrar hedefle`;
+      }
+    }
+  }
+
+  return { last, todayEntry, pr: currentPR, oneRM: currentOneRM, totalVolume, change, nextTarget, isNewPR, prevPRForBanner, hasHistory: priorEntries.length > 0 };
+}
+
+function renderExerciseStatsHTML(exSlug) {
+  const s = getExerciseStats(exSlug);
+  if (!s.hasHistory && !s.todayEntry) {
+    return `<div class="exercise-stats"><div class="no-history">Henüz geçmiş yok — ilk kaydın bugün olacak</div></div>`;
+  }
+  let html = '<div class="exercise-stats">';
+  if (s.isNewPR) {
+    html += `<div class="new-pr-banner">🔥 YENİ PR! ${s.prevPRForBanner ? s.prevPRForBanner + 'kg → ' : ''}${entryMaxWeight(s.todayEntry)}kg</div>`;
+  }
+  if (s.last) {
+    html += `<div class="stat-block"><div class="stat-block-title">GEÇEN ANTRENMAN</div><div class="stat-block-body">${formatSetsList(s.last)}</div></div>`;
+  }
+  if (s.nextTarget) {
+    html += `<div class="stat-block target-block"><div class="stat-block-title">🎯 BUGÜNKÜ HEDEF</div><div class="stat-block-body">${s.nextTarget}</div></div>`;
+  }
+  if (s.change) {
+    const cls = s.change.abs >= 0 ? 'change-pos' : 'change-neg';
+    const sign = s.change.abs >= 0 ? '+' : '';
+    html += `<div class="stat-line"><span>Değişim</span><span class="${cls}">${sign}${s.change.abs}kg (${sign}${s.change.pct}%)</span></div>`;
+  }
+  if (s.pr) {
+    html += `<div class="stat-line"><span>Kişisel rekor</span><span class="pr-badge">🏆 ${s.pr}kg</span></div>`;
+  }
+  if (s.oneRM) {
+    html += `<div class="stat-line"><span>Tahmini 1RM (Epley)</span><b>${Math.round(s.oneRM)}kg</b></div>`;
+  }
+  html += `<div class="stat-line"><span>Toplam hacim (tüm zamanlar)</span><b>${Math.round(s.totalVolume).toLocaleString('tr-TR')}kg</b></div>`;
+  html += '</div>';
+  return html;
+}
+
+function updateExerciseStats(exSlug) {
+  const el = document.getElementById(`stats-${exSlug}`);
+  if (el) el.innerHTML = renderExerciseStatsHTML(exSlug);
+}
+
+/* ---- Dynamic sets UI ---- */
+const RIR_OPTIONS = ['0', '1', '2', '3', '4+'];
+
+function getDisplayEntry(key, exSlug) {
+  const real = STATE.workouts[key] && STATE.workouts[key][exSlug];
+  if (real) return real;
+  return { sets: [{ kg: '', reps: '', rir: '' }, { kg: '', reps: '', rir: '' }] }; // virtual default, not persisted until edited
+}
+
+function ensureRealEntry(key, exSlug, fallbackSets) {
+  if (!STATE.workouts[key]) STATE.workouts[key] = {};
+  if (!STATE.workouts[key][exSlug]) {
+    STATE.workouts[key][exSlug] = { sets: (fallbackSets || [{ kg: '', reps: '', rir: '' }, { kg: '', reps: '', rir: '' }]).map(s => ({ ...s })) };
+  }
+  return STATE.workouts[key][exSlug];
+}
+
+function buildSetRowHTML(exSlug, idx, s, totalSets) {
+  const rirButtons = RIR_OPTIONS.map(opt =>
+    `<button type="button" class="rir-btn ${s.rir === opt ? 'active' : ''}" data-ex="${exSlug}" data-idx="${idx}" data-rir="${opt}">${opt}</button>`
+  ).join('');
+  const removeBtn = totalSets > 1 ? `<span class="set-remove" data-ex="${exSlug}" data-idx="${idx}">✕</span>` : '';
+  return `
+    <div class="set-row-dyn">
+      <div class="set-row-header"><span>Set ${idx + 1}</span>${removeBtn}</div>
+      <div class="set-inputs-dyn">
+        <input type="number" placeholder="kg" data-ex="${exSlug}" data-idx="${idx}" data-field="kg" value="${s.kg || ''}">
+        <input type="number" placeholder="tekrar" data-ex="${exSlug}" data-idx="${idx}" data-field="reps" value="${s.reps || ''}">
+      </div>
+      <div class="rir-row">
+        <span class="rir-label">RIR</span>
+        <div class="rir-buttons">${rirButtons}</div>
+      </div>
+    </div>`;
+}
+
+function renderSetsHTML(exSlug, entry) {
+  return entry.sets.map((s, idx) => buildSetRowHTML(exSlug, idx, s, entry.sets.length)).join('');
+}
+
+function attachSetListeners(container) {
+  container.querySelectorAll('input[data-field]').forEach(i => i.addEventListener('input', handleSetFieldInput));
+  container.querySelectorAll('.rir-btn').forEach(b => b.addEventListener('click', handleRirClick));
+  container.querySelectorAll('.set-remove').forEach(x => x.addEventListener('click', handleRemoveSetClick));
+}
+
+function handleSetFieldInput(e) {
+  const exSlug = e.target.dataset.ex, idx = Number(e.target.dataset.idx), field = e.target.dataset.field;
+  const key = workoutKey();
+  const displaySets = getDisplayEntry(key, exSlug).sets;
+  const entry = ensureRealEntry(key, exSlug, displaySets);
+  while (entry.sets.length <= idx) entry.sets.push({ kg: '', reps: '', rir: '' });
+  entry.sets[idx][field] = e.target.value;
+  markDirty();
+  updateExerciseStats(exSlug);
+}
+
+function handleRirClick(e) {
+  const btn = e.currentTarget;
+  const exSlug = btn.dataset.ex, idx = Number(btn.dataset.idx), rir = btn.dataset.rir;
+  const key = workoutKey();
+  const displaySets = getDisplayEntry(key, exSlug).sets;
+  const entry = ensureRealEntry(key, exSlug, displaySets);
+  while (entry.sets.length <= idx) entry.sets.push({ kg: '', reps: '', rir: '' });
+  entry.sets[idx].rir = entry.sets[idx].rir === rir ? '' : rir;
+  markDirty();
+  rerenderSetsForExercise(exSlug);
+}
+
+function handleRemoveSetClick(e) {
+  const exSlug = e.currentTarget.dataset.ex, idx = Number(e.currentTarget.dataset.idx);
+  const key = workoutKey();
+  const entry = ensureRealEntry(key, exSlug, getDisplayEntry(key, exSlug).sets);
+  if (entry.sets.length <= 1) return;
+  entry.sets.splice(idx, 1);
+  markDirty();
+  rerenderSetsForExercise(exSlug);
+}
+
+function addSet(exSlug) {
+  const key = workoutKey();
+  const entry = ensureRealEntry(key, exSlug, getDisplayEntry(key, exSlug).sets);
+  entry.sets.push({ kg: '', reps: '', rir: '' });
+  markDirty();
+  rerenderSetsForExercise(exSlug);
+}
+
+function rerenderSetsForExercise(exSlug) {
+  const key = workoutKey();
+  const entry = getDisplayEntry(key, exSlug);
+  const container = document.getElementById(`sets-${exSlug}`);
+  if (!container) return;
+  container.innerHTML = renderSetsHTML(exSlug, entry);
+  attachSetListeners(container);
+  updateExerciseStats(exSlug);
+}
+
+function renderWorkout() {
+  const content = document.getElementById('workoutContent');
+  const dayInfo = PROGRAM[currentDay];
+  if (dayInfo.rest) {
+    content.innerHTML = '<div class="rest-day">😴 Dinlenme günü<br><br>Kesinlikle dinlen.</div>';
+    document.getElementById('workoutNotesSection').innerHTML = '';
+    return;
+  }
+  const key = workoutKey();
+  content.innerHTML = '';
+  dayInfo.groups.forEach(group => {
+    const gt = document.createElement('div');
+    gt.className = 'group-title';
+    gt.textContent = group.name;
+    content.appendChild(gt);
+    group.exercises.forEach(ex => {
+      const exSlug = slugify(ex);
+      const entry = getDisplayEntry(key, exSlug);
+      const isCompleted = !!entry.completed;
+      const card = document.createElement('div');
+      card.className = 'exercise-card' + (isCompleted ? ' completed' : '');
+      card.innerHTML = `
+        <div class="exercise-name">${ex}</div>
+        <div id="sets-${exSlug}"></div>
+        <button type="button" class="btn small secondary add-set-btn">+ Set Ekle</button>
+        <button type="button" class="complete-toggle ${isCompleted ? 'done' : ''}" data-ex="${exSlug}">${isCompleted ? '✓ Tamamlandı' : 'Tamamlandı İşaretle'}</button>
+        <div id="stats-${exSlug}"></div>`;
+      content.appendChild(card);
+
+      const setsContainer = card.querySelector(`#sets-${exSlug}`);
+      setsContainer.innerHTML = renderSetsHTML(exSlug, entry);
+      attachSetListeners(setsContainer);
+      card.querySelector('.add-set-btn').addEventListener('click', () => addSet(exSlug));
+      card.querySelector('.complete-toggle').addEventListener('click', () => toggleExerciseComplete(exSlug));
+      updateExerciseStats(exSlug);
+    });
+  });
+  renderWorkoutNotes();
+}
+
+function toggleExerciseComplete(exSlug) {
+  const key = workoutKey();
+  const entry = ensureRealEntry(key, exSlug, getDisplayEntry(key, exSlug).sets);
+  entry.completed = !entry.completed;
+  markDirty();
+  renderWorkout();
+}
+
+/* ---- Workout notes ---- */
+function getLastNoteForDay(dayName, beforeDate) {
+  const entries = Object.keys(STATE.workoutNotes)
+    .map(k => ({ key: k, date: k.split('|')[0], day: k.split('|')[1], text: STATE.workoutNotes[k] }))
+    .filter(e => e.day === dayName && e.date < beforeDate && e.text && e.text.trim())
+    .sort((a, b) => a.date.localeCompare(b.date));
+  return entries.length ? entries[entries.length - 1] : null;
+}
+
+function renderWorkoutNotes() {
+  const el = document.getElementById('workoutNotesSection');
+  const key = workoutKey();
+  const currentNote = STATE.workoutNotes[key] || '';
+  const lastNote = getLastNoteForDay(currentDay, currentDate);
+
+  el.innerHTML = `
+    <div class="group-title">📝 Bugünkü Notlar</div>
+    <div class="card">
+      <textarea id="workoutNoteInput" placeholder="Örn: Bench'te son sette zorlandım, omuz biraz yorgundu...">${currentNote}</textarea>
+      ${lastNote ? `<div class="last-note-box"><b>Son antrenman notu (${formatDateTR(lastNote.date)})</b>${lastNote.text}</div>` : ''}
+    </div>`;
+  document.getElementById('workoutNoteInput').addEventListener('input', handleWorkoutNoteInput);
+}
+
+function handleWorkoutNoteInput(e) {
+  const key = workoutKey();
+  const text = e.target.value;
+  if (text.trim()) STATE.workoutNotes[key] = text; else delete STATE.workoutNotes[key];
+  markDirty();
+}
+
+
+
+/* ===================== NUTRITION ===================== */
+const MEAL_NAMES = { breakfast: 'Kahvaltı', lunch: 'Öğle', dinner: 'Akşam', snack: 'Atıştırmalık' };
+const MEAL_SUGGESTIONS = [
+  { name: 'Tavuk + Pilav', kcal: 550, protein: 45 },
+  { name: 'Yoğurt + Muz', kcal: 250, protein: 12 },
+  { name: 'Cream of Rice + Whey', kcal: 420, protein: 38 },
+  { name: 'Yumurta + Ekmek', kcal: 350, protein: 20 },
+  { name: 'Somon + Tatlı Patates', kcal: 480, protein: 32 },
+  { name: 'Süzme Yoğurt + Badem', kcal: 300, protein: 18 },
+  { name: 'Ton Balığı + Bulgur', kcal: 400, protein: 34 },
+  { name: 'Whey Shake (su ile)', kcal: 160, protein: 30 },
+  { name: 'Dana Kıyma + Makarna', kcal: 620, protein: 40 },
+  { name: 'Fıstık Ezmeli Muz Smoothie', kcal: 380, protein: 15 },
+];
+
+function nutritionDayData() {
+  const key = currentDate;
+  if (!STATE.meals[key]) STATE.meals[key] = { breakfast: [], lunch: [], dinner: [], snack: [] };
+  return STATE.meals[key];
+}
+
+function getNutritionTotalsToday() {
+  const data = nutritionDayData();
+  let totals = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+  Object.values(data).forEach(items => items.forEach(it => {
+    totals.kcal += n(it.kcal); totals.protein += n(it.protein); totals.carbs += n(it.carbs); totals.fat += n(it.fat);
+  }));
+  return totals;
+}
+
+function renderNutrition() {
+  document.getElementById('nutritionDate').textContent = formatDateTR(currentDate);
+  const totals = getNutritionTotalsToday();
+
+  document.getElementById('nutKcal').textContent = Math.round(totals.kcal);
+  document.getElementById('nutKcalGoal').textContent = STATE.goals.kcal;
+  document.getElementById('nutKcalBar').style.width = Math.min(100, totals.kcal / STATE.goals.kcal * 100) + '%';
+
+  document.getElementById('nutProtein').textContent = Math.round(totals.protein);
+  document.getElementById('nutProteinGoal').textContent = STATE.goals.protein;
+  document.getElementById('nutProteinBar').style.width = Math.min(100, totals.protein / STATE.goals.protein * 100) + '%';
+
+  document.getElementById('nutCarbs').textContent = Math.round(totals.carbs);
+  document.getElementById('nutCarbsGoal').textContent = STATE.goals.carbs;
+  document.getElementById('nutCarbsBar').style.width = Math.min(100, totals.carbs / STATE.goals.carbs * 100) + '%';
+
+  document.getElementById('nutFat').textContent = Math.round(totals.fat);
+  document.getElementById('nutFatGoal').textContent = STATE.goals.fat;
+  document.getElementById('nutFatBar').style.width = Math.min(100, totals.fat / STATE.goals.fat * 100) + '%';
+
+  document.getElementById('goalKcal').value = STATE.goals.kcal;
+  document.getElementById('goalProtein').value = STATE.goals.protein;
+  document.getElementById('goalCarbs').value = STATE.goals.carbs;
+  document.getElementById('goalFat').value = STATE.goals.fat;
+
+  const remainingKcal = Math.round(STATE.goals.kcal - totals.kcal);
+  const remainingProtein = Math.round(STATE.goals.protein - totals.protein);
+  document.getElementById('remainingCard').innerHTML = `
+    <div class="rem-item"><div class="rem-num">🔥 ${remainingKcal >= 0 ? remainingKcal : 0}</div><div class="rem-label">${remainingKcal >= 0 ? 'kcal kaldı' : (Math.abs(remainingKcal) + ' kcal aşıldı')}</div></div>
+    <div class="rem-item"><div class="rem-num">🥩 ${remainingProtein >= 0 ? remainingProtein : 0}g</div><div class="rem-label">${remainingProtein >= 0 ? 'protein kaldı' : 'protein hedefi tamam'}</div></div>`;
+
+  renderModeButtons();
+
+  const data = nutritionDayData();
+  const container = document.getElementById('mealsContainer');
+  container.innerHTML = '';
+  Object.keys(MEAL_NAMES).forEach(mealKey => {
+    const gt = document.createElement('div');
+    gt.className = 'group-title';
+    gt.textContent = MEAL_NAMES[mealKey];
+    container.appendChild(gt);
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    const items = data[mealKey];
+    let itemsHtml = items.map((it, idx) => `
+      <div class="meal-item">
+        <span>${it.name} — ${it.kcal}kcal, ${it.protein}p/${it.carbs}k/${it.fat}y</span>
+        <span class="del" onclick="removeMealItem('${mealKey}', ${idx})">✕</span>
+      </div>`).join('');
+    card.innerHTML = itemsHtml + `
+      <div class="add-food-row">
+        <input type="text" placeholder="Yiyecek" id="${mealKey}-name">
+        <input type="number" placeholder="kcal" id="${mealKey}-kcal">
+        <input type="number" placeholder="prot" id="${mealKey}-protein">
+        <input type="number" placeholder="karb" id="${mealKey}-carbs">
+        <input type="number" placeholder="yağ" id="${mealKey}-fat">
+        <button class="btn small" onclick="addMealItem('${mealKey}')">+</button>
+      </div>`;
+    container.appendChild(card);
+  });
+
+  renderFoodSearchResults();
+  renderMealSuggestions(remainingKcal, remainingProtein);
+  renderRecipes();
+  renderCoachAnalysis();
+  renderIngredientChecklist();
+  renderDailyPlanCard();
+  renderSupplementCard();
+  renderShoppingList();
+}
+
+function addMealItem(mealKey) {
+  const name = document.getElementById(`${mealKey}-name`).value.trim();
+  if (!name) return;
+  const kcal = document.getElementById(`${mealKey}-kcal`).value || 0;
+  const protein = document.getElementById(`${mealKey}-protein`).value || 0;
+  const carbs = document.getElementById(`${mealKey}-carbs`).value || 0;
+  const fat = document.getElementById(`${mealKey}-fat`).value || 0;
+  const data = nutritionDayData();
+  data[mealKey].push({ name, kcal, protein, carbs, fat });
+  markDirty();
+  renderNutrition();
+}
+
+function removeMealItem(mealKey, idx) {
+  const data = nutritionDayData();
+  data[mealKey].splice(idx, 1);
+  markDirty();
+  renderNutrition();
+}
+
+/* ---- Food database search & custom foods ---- */
+function searchFoods(query) {
+  const all = [...FOOD_DATABASE, ...STATE.customFoods];
+  if (!query || !query.trim()) return all.slice(0, 6);
+  const q = query.toLocaleLowerCase('tr');
+  return all.filter(f => f.name.toLocaleLowerCase('tr').includes(q)).slice(0, 8);
+}
+
+let _currentFoodResults = [];
+
+function renderFoodSearchResults() {
+  const input = document.getElementById('foodSearchInput');
+  const query = input ? input.value : '';
+  const results = searchFoods(query);
+  _currentFoodResults = results;
+  const el = document.getElementById('foodSearchResults');
+  if (results.length === 0) {
+    el.innerHTML = '<div class="no-history">Sonuç bulunamadı</div>';
+    return;
+  }
+  el.innerHTML = results.map((f, i) => `
+    <div class="food-result">
+      <div class="food-result-name">${f.name}</div>
+      <div class="food-result-macro">100g: ${f.kcal}kcal, ${f.protein}g protein, ${f.carbs}g karb, ${f.fat}g yağ</div>
+      <div class="food-result-row">
+        <input type="number" class="food-grams" data-idx="${i}" value="100" placeholder="gram">
+        <select class="food-meal-select" data-idx="${i}">
+          <option value="breakfast">Kahvaltı</option>
+          <option value="lunch">Öğle</option>
+          <option value="dinner">Akşam</option>
+          <option value="snack">Atıştırmalık</option>
+        </select>
+        <button type="button" class="btn small" data-idx="${i}">+</button>
+      </div>
+    </div>`).join('');
+  el.querySelectorAll('button[data-idx]').forEach(btn => btn.addEventListener('click', () => addFoodFromSearch(Number(btn.dataset.idx))));
+}
+
+function addFoodFromSearch(idx) {
+  const f = _currentFoodResults[idx];
+  if (!f) return;
+  const gramsInput = document.querySelector(`.food-grams[data-idx="${idx}"]`);
+  const mealSelect = document.querySelector(`.food-meal-select[data-idx="${idx}"]`);
+  const grams = Number(gramsInput.value) || 100;
+  const mealKey = mealSelect.value;
+  const factor = grams / 100;
+  const data = nutritionDayData();
+  data[mealKey].push({
+    name: `${f.name} (${grams}g)`,
+    kcal: Math.round(f.kcal * factor),
+    protein: +(f.protein * factor).toFixed(1),
+    carbs: +(f.carbs * factor).toFixed(1),
+    fat: +(f.fat * factor).toFixed(1),
+  });
+  markDirty();
+  renderNutrition();
+  flashStatus(`${f.name} eklendi ✓`);
+}
+
+function addCustomFood() {
+  const name = document.getElementById('customFoodName').value.trim();
+  if (!name) return;
+  const kcal = Number(document.getElementById('customFoodKcal').value) || 0;
+  const protein = Number(document.getElementById('customFoodProtein').value) || 0;
+  const carbs = Number(document.getElementById('customFoodCarbs').value) || 0;
+  const fat = Number(document.getElementById('customFoodFat').value) || 0;
+  STATE.customFoods.push({ name, kcal, protein, carbs, fat });
+  markDirty();
+  ['customFoodName', 'customFoodKcal', 'customFoodProtein', 'customFoodCarbs', 'customFoodFat'].forEach(id => document.getElementById(id).value = '');
+  renderFoodSearchResults();
+  flashStatus(`${name} veritabanına eklendi ✓`);
+}
+
+/* ---- Meal suggestions based on remaining macros ---- */
+function renderMealSuggestions(remainingKcal, remainingProtein) {
+  const card = document.getElementById('mealSuggestionsCard');
+  if (remainingKcal <= 0) {
+    card.innerHTML = '<div class="no-history">Bugünkü kalori hedefine ulaştın 🎉</div>';
+    return;
+  }
+  const suggestions = MEAL_SUGGESTIONS
+    .filter(s => s.kcal <= remainingKcal + 150)
+    .sort((a, b) => b.protein - a.protein)
+    .slice(0, 4);
+  if (suggestions.length === 0) {
+    card.innerHTML = '<div class="no-history">Kalan kaloriye uygun hazır öneri yok, az miktarda bir atıştırmalık düşünebilirsin</div>';
+    return;
+  }
+  card.innerHTML = suggestions.map(s => `<div class="meal-item"><span>${s.name} — ${s.kcal}kcal, ${s.protein}g protein</span></div>`).join('');
+}
+
+/* ---- Smart nutrition coach: end-of-day deficit analysis + recommendations ---- */
+function getCombinedSuggestionPool() {
+  return [
+    ...RECIPES.filter(r => r.modes.includes(STATE.goals.mode) || r.modes.includes('any'))
+      .map(r => ({ id: r.id, isRecipe: true, name: r.name, kcal: r.kcal, protein: r.protein, carbs: r.carbs, fat: r.fat })),
+    ...MEAL_SUGGESTIONS.map((s, i) => ({ id: 'sugg-' + i, isRecipe: false, name: s.name, kcal: s.kcal, protein: s.protein, carbs: 0, fat: 0 })),
+  ];
+}
+
+function renderCoachAnalysis() {
+  const totals = getNutritionTotalsToday();
+  const deficitKcal = Math.max(0, Math.round(STATE.goals.kcal - totals.kcal));
+  const deficitProtein = Math.max(0, Math.round(STATE.goals.protein - totals.protein));
+  const card = document.getElementById('coachAnalysisCard');
+
+  let html = `<div class="coach-deficit-row">
+    <div class="coach-deficit-item"><div class="cd-num">🔥 ${deficitKcal}</div><div class="cd-label">Eksik Kalori</div></div>
+    <div class="coach-deficit-item"><div class="cd-num">🥩 ${deficitProtein}g</div><div class="cd-label">Eksik Protein</div></div>
+  </div>`;
+
+  if (deficitKcal <= 0 && deficitProtein <= 0) {
+    html += `<div class="no-history">Bugünkü hedeflerine ulaştın 🎉</div>`;
+    card.innerHTML = html;
+    return;
+  }
+
+  const pool = getCombinedSuggestionPool();
+  const candidates = pool
+    .filter(s => deficitKcal === 0 || s.kcal <= deficitKcal + 200)
+    .sort((a, b) => b.protein - a.protein)
+    .slice(0, 5);
+
+  if (candidates.length > 0) {
+    html += candidates.map(s => `<div class="coach-rec-item"><span>${s.name}</span><span>${s.kcal}kcal, ${s.protein}g</span></div>`).join('');
+  } else {
+    html += `<div class="no-history">Kalan kaloriye uygun hazır öneri yok</div>`;
+  }
+  card.innerHTML = html;
+}
+
+/* ---- "Bugün Ne Yemeliyim?" home card ---- */
+function renderWhatToEatCard() {
+  const totals = getNutritionTotalsToday();
+  const remainingKcal = STATE.goals.kcal - totals.kcal;
+  const card = document.getElementById('whatToEatCard');
+
+  const pool = getCombinedSuggestionPool();
+  let candidates = pool.filter(s => remainingKcal <= 0 ? true : s.kcal <= remainingKcal + 200);
+  candidates = candidates.sort((a, b) => b.protein - a.protein).slice(0, 8);
+
+  if (candidates.length === 0) {
+    card.innerHTML = '<div class="no-history">Şu an için uygun öneri yok</div>';
+    return;
+  }
+
+  card.innerHTML = candidates.map((c, idx) => `
+    <div class="eat-option">
+      <div class="eat-option-header"><span class="eat-option-name">Seçenek ${idx + 1}: ${c.name}</span></div>
+      <div class="eat-option-macro">${c.kcal}kcal${c.protein ? ', ' + c.protein + 'g protein' : ''}</div>
+      <div class="recipe-add-row" style="margin-top:6px">
+        <select class="eat-meal-select" data-idx="${idx}">
+          <option value="breakfast">Kahvaltı</option>
+          <option value="lunch">Öğle</option>
+          <option value="dinner">Akşam</option>
+          <option value="snack">Atıştırmalık</option>
+        </select>
+        <button type="button" class="btn small" data-idx="${idx}">Ekle</button>
+      </div>
+    </div>`).join('');
+
+  card.querySelectorAll('.recipe-add-row button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = Number(btn.dataset.idx);
+      const c = candidates[idx];
+      const select = card.querySelector(`.eat-meal-select[data-idx="${idx}"]`);
+      const mealKey = select.value;
+      const data = nutritionDayData();
+      data[mealKey].push({ name: c.name, kcal: c.kcal, protein: c.protein || 0, carbs: c.carbs || 0, fat: c.fat || 0 });
+      markDirty();
+      renderHome();
+      flashStatus(`${c.name} eklendi ✓`);
+    });
+  });
+}
+
+/* ---- Smart recipe system (mode + category aware) ---- */
+let recipeCategoryFilter = 'all';
+
+function renderRecipeCategoryTabs() {
+  const el = document.getElementById('recipeCategoryTabs');
+  const options = [['all', 'Tümü'], ['favorites', '⭐ Favoriler'], ...Object.entries(RECIPE_CATEGORIES)];
+  el.innerHTML = options.map(([val, label]) =>
+    `<div class="filter-tab ${recipeCategoryFilter === val ? 'active' : ''}" data-val="${val}">${label}</div>`
+  ).join('');
+  el.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.addEventListener('click', () => { recipeCategoryFilter = tab.dataset.val; renderRecipes(); });
+  });
+}
+
+function getFilteredRecipes() {
+  const mode = STATE.goals.mode;
+  let list = RECIPES.filter(r => r.modes.includes(mode) || r.modes.includes('any'));
+  if (recipeCategoryFilter === 'favorites') {
+    list = RECIPES.filter(r => STATE.favoriteRecipes.includes(r.id));
+  } else if (recipeCategoryFilter !== 'all') {
+    list = list.filter(r => r.category === recipeCategoryFilter);
+  }
+  return list;
+}
+
+function renderRecipes() {
+  const modeLabel = { bulk: 'Bulk', maintenance: 'Maintenance', cut: 'Cut' }[STATE.goals.mode] || '';
+  document.getElementById('recipeModeLabel').textContent = `(${modeLabel} moduna göre)`;
+  renderRecipeCategoryTabs();
+  const grid = document.getElementById('recipesGrid');
+  const recipes = getFilteredRecipes();
+  if (recipes.length === 0) {
+    grid.innerHTML = '<div class="card"><div class="no-history">Bu filtreye uygun tarif yok</div></div>';
+    return;
+  }
+  grid.innerHTML = recipes.map(r => {
+    const isFav = STATE.favoriteRecipes.includes(r.id);
+    return `
+    <div class="recipe-card">
+      <div class="recipe-header">
+        <div>
+          <div class="recipe-name">${r.name}</div>
+          <div class="recipe-cat">${RECIPE_CATEGORIES[r.category] || r.category}</div>
+        </div>
+        <button type="button" class="recipe-fav-btn ${isFav ? 'active' : ''}" data-id="${r.id}">${isFav ? '★' : '☆'}</button>
+      </div>
+      <div class="recipe-macros"><span>🔥 <b>${r.kcal}</b>kcal</span><span>🥩 <b>${r.protein}</b>g</span><span>🍚 <b>${r.carbs}</b>g</span><span>🥑 <b>${r.fat}</b>g</span></div>
+      <div class="recipe-prep">⏱️ ${r.prepMinutes || '-'} dk</div>
+      <div class="recipe-ingredients">${r.ingredients.join(' • ')}</div>
+      ${r.steps && r.steps.length ? `<ol class="recipe-steps">${r.steps.map(s => `<li>${s}</li>`).join('')}</ol>` : ''}
+      <div class="recipe-add-row">
+        <select data-id="${r.id}" class="recipe-meal-select">
+          <option value="breakfast">Kahvaltı</option>
+          <option value="lunch">Öğle</option>
+          <option value="dinner">Akşam</option>
+          <option value="snack">Atıştırmalık</option>
+        </select>
+        <button type="button" class="btn small" data-id="${r.id}">Öğüne Ekle</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.recipe-fav-btn').forEach(btn => btn.addEventListener('click', () => toggleFavoriteRecipe(btn.dataset.id)));
+  grid.querySelectorAll('.recipe-add-row button').forEach(btn => btn.addEventListener('click', () => addRecipeToMeal(btn.dataset.id)));
+}
+
+function toggleFavoriteRecipe(id) {
+  if (STATE.favoriteRecipes.includes(id)) {
+    STATE.favoriteRecipes = STATE.favoriteRecipes.filter(f => f !== id);
+  } else {
+    STATE.favoriteRecipes.push(id);
+  }
+  markDirty();
+  renderRecipes();
+}
+
+function addRecipeToMeal(id) {
+  const r = RECIPES.find(x => x.id === id);
+  if (!r) return;
+  const select = document.querySelector(`.recipe-meal-select[data-id="${id}"]`);
+  const mealKey = select.value;
+  const data = nutritionDayData();
+  data[mealKey].push({ name: r.name, kcal: r.kcal, protein: r.protein, carbs: r.carbs, fat: r.fat });
+  markDirty();
+  renderNutrition();
+  flashStatus(`${r.name} eklendi ✓`);
+}
+
+/* ---- "Evde Olanlarım" ingredient-based recipe finder ---- */
+function renderIngredientChecklist() {
+  const el = document.getElementById('ingredientChecklist');
+  el.innerHTML = INGREDIENT_OPTIONS.map(opt =>
+    `<div class="ingredient-chip ${STATE.homeIngredients.includes(opt.key) ? 'selected' : ''}" data-key="${opt.key}">${opt.label}</div>`
+  ).join('');
+  el.querySelectorAll('.ingredient-chip').forEach(chip => {
+    chip.addEventListener('click', () => toggleHomeIngredient(chip.dataset.key));
+  });
+  renderHomeIngredientRecipes();
+}
+
+function toggleHomeIngredient(key) {
+  if (STATE.homeIngredients.includes(key)) {
+    STATE.homeIngredients = STATE.homeIngredients.filter(k => k !== key);
+  } else {
+    STATE.homeIngredients.push(key);
+  }
+  markDirty();
+  renderIngredientChecklist();
+}
+
+function renderHomeIngredientRecipes() {
+  const el = document.getElementById('homeIngredientRecipes');
+  if (STATE.homeIngredients.length === 0) {
+    el.innerHTML = '';
+    return;
+  }
+  const selected = new Set(STATE.homeIngredients);
+  const matches = RECIPES.filter(r => r.keyIngredients && r.keyIngredients.length > 0 && r.keyIngredients.every(k => selected.has(k)));
+  if (matches.length === 0) {
+    el.innerHTML = '<div class="card"><div class="no-history">Seçtiğin malzemelerle tam uyan tarif yok, birkaç malzeme daha eklemeyi dene</div></div>';
+    return;
+  }
+  el.innerHTML = matches.map(r => `
+    <div class="recipe-card">
+      <div class="recipe-header"><div><div class="recipe-name">${r.name}</div></div></div>
+      <div class="recipe-macros"><span>🔥 <b>${r.kcal}</b>kcal</span><span>🥩 <b>${r.protein}</b>g</span><span>🍚 <b>${r.carbs}</b>g</span><span>🥑 <b>${r.fat}</b>g</span></div>
+      <div class="recipe-ingredients">${r.ingredients.join(' • ')}</div>
+    </div>`).join('');
+}
+
+/* ---- Automatic daily nutrition plan ---- */
+const PLAN_SLOTS = [
+  { key: 'breakfast', label: 'Kahvaltı', pct: 0.20, category: 'breakfast' },
+  { key: 'lunch', label: 'Öğle', pct: 0.30, category: 'lunch' },
+  { key: 'snack', label: 'Ara Öğün', pct: 0.15, category: 'snack' },
+  { key: 'dinner', label: 'Akşam', pct: 0.25, category: 'dinner' },
+  { key: 'night', label: 'Gece', pct: 0.10, category: 'night' },
+];
+
+function generateDailyPlan() {
+  const mode = STATE.goals.mode;
+  const targetKcalTotal = STATE.goals.kcal;
+  const plan = PLAN_SLOTS.map(slot => {
+    const targetKcal = Math.round(targetKcalTotal * slot.pct);
+    let candidates = RECIPES.filter(r => r.category === slot.category && (r.modes.includes(mode) || r.modes.includes('any')));
+    if (candidates.length === 0) candidates = RECIPES.filter(r => r.category === slot.category);
+    if (candidates.length === 0) candidates = RECIPES.filter(r => r.modes.includes(mode) || r.modes.includes('any'));
+    if (candidates.length === 0) candidates = RECIPES;
+    candidates = [...candidates].sort((a, b) => Math.abs(a.kcal - targetKcal) - Math.abs(b.kcal - targetKcal));
+    const pickFrom = candidates.slice(0, Math.min(3, candidates.length));
+    const chosen = pickFrom[Math.floor(Math.random() * pickFrom.length)];
+    return { slotKey: slot.key, slotLabel: slot.label, recipeId: chosen ? chosen.id : null };
+  });
+  STATE.dailyPlans[currentDate] = plan;
+  markDirty();
+  renderDailyPlanCard();
+  flashStatus('Günlük plan oluşturuldu ✓');
+}
+
+function renderDailyPlanCard() {
+  const el = document.getElementById('dailyPlanCard');
+  const plan = STATE.dailyPlans[currentDate];
+  if (!plan) {
+    el.innerHTML = '<div class="no-history">Henüz plan oluşturulmadı, "Plan Oluştur"a bas</div>';
+    return;
+  }
+  let totalKcal = 0, totalProtein = 0;
+  const rows = plan.map(slot => {
+    const r = RECIPES.find(x => x.id === slot.recipeId);
+    if (!r) return `<div class="plan-slot-row"><span class="plan-slot-label">${slot.slotLabel}</span><span>-</span></div>`;
+    totalKcal += r.kcal; totalProtein += r.protein;
+    return `<div class="plan-slot-row"><span><span class="plan-slot-label">${slot.slotLabel}</span><br>${r.name}</span><span>${r.kcal}kcal</span></div>`;
+  }).join('');
+  el.innerHTML = rows + `<div class="plan-total-row"><span>Toplam</span><span>${totalKcal}kcal, ${totalProtein}g protein</span></div>`;
+}
+
+function applyDailyPlan() {
+  const plan = STATE.dailyPlans[currentDate];
+  if (!plan) { flashStatus('Önce plan oluştur'); return; }
+  const data = nutritionDayData();
+  plan.forEach(slot => {
+    const r = RECIPES.find(x => x.id === slot.recipeId);
+    if (!r) return;
+    const mealKey = slot.slotKey === 'night' ? 'snack' : slot.slotKey; // existing data model has 4 buckets; night folds into snack
+    data[mealKey].push({ name: r.name + ' (plan)', kcal: r.kcal, protein: r.protein, carbs: r.carbs, fat: r.fat });
+  });
+  markDirty();
+  renderNutrition();
+  flashStatus('Plan bugüne uygulandı ✓');
+}
+
+/* ---- Supplement tracking ---- */
+const SUPPLEMENT_LIST = [
+  { key: 'whey', label: 'Whey', icon: '🥤' },
+  { key: 'gainer', label: 'Gainer', icon: '💪' },
+  { key: 'omega3', label: 'Omega 3', icon: '🐟' },
+  { key: 'd3k2', label: 'D3K2', icon: '☀️' },
+  { key: 'multivitamin', label: 'Multivitamin', icon: '💊' },
+];
+
+function toggleSupplement(key) {
+  if (!STATE.supplements[currentDate]) STATE.supplements[currentDate] = {};
+  STATE.supplements[currentDate][key] = !STATE.supplements[currentDate][key];
+  markDirty();
+  renderSupplementCard();
+}
+
+function renderSupplementCard() {
+  const today = STATE.supplements[currentDate] || {};
+  const el = document.getElementById('supplementCard');
+  el.innerHTML = SUPPLEMENT_LIST.map(s => `
+    <div class="supplement-row">
+      <span>${s.icon} ${s.label}</span>
+      <input type="checkbox" data-key="${s.key}" ${today[s.key] ? 'checked' : ''}>
+    </div>`).join('');
+  el.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => toggleSupplement(cb.dataset.key));
+  });
+}
+
+/* ---- Shopping list ---- */
+function addShoppingItem() {
+  const input = document.getElementById('shoppingItemInput');
+  const text = input.value.trim();
+  if (!text) return;
+  STATE.shoppingList.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2, 7), text, checked: false });
+  input.value = '';
+  markDirty();
+  renderShoppingList();
+}
+
+function toggleShoppingItem(id) {
+  const item = STATE.shoppingList.find(i => i.id === id);
+  if (item) item.checked = !item.checked;
+  markDirty();
+  renderShoppingList();
+}
+
+function removeShoppingItem(id) {
+  STATE.shoppingList = STATE.shoppingList.filter(i => i.id !== id);
+  markDirty();
+  renderShoppingList();
+}
+
+function generateShoppingListFromPlan() {
+  const plan = STATE.dailyPlans[currentDate];
+  if (!plan) { flashStatus('Önce bir plan oluştur'); return; }
+  const existingTexts = new Set(STATE.shoppingList.map(i => i.text.toLowerCase()));
+  plan.forEach(slot => {
+    const r = RECIPES.find(x => x.id === slot.recipeId);
+    if (!r) return;
+    r.ingredients.forEach(ing => {
+      const key = ing.toLowerCase();
+      if (!existingTexts.has(key)) {
+        existingTexts.add(key);
+        STATE.shoppingList.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2, 7), text: ing, checked: false });
+      }
+    });
+  });
+  markDirty();
+  renderShoppingList();
+  flashStatus('Alışveriş listesi güncellendi ✓');
+}
+
+function renderShoppingList() {
+  const el = document.getElementById('shoppingListItems');
+  if (STATE.shoppingList.length === 0) {
+    el.innerHTML = '<div class="no-history">Liste boş</div>';
+    return;
+  }
+  el.innerHTML = STATE.shoppingList.map(item => `
+    <div class="shopping-item ${item.checked ? 'checked' : ''}">
+      <input type="checkbox" data-id="${item.id}" ${item.checked ? 'checked' : ''}>
+      <span>${item.text}</span>
+      <span class="del" data-id="${item.id}">✕</span>
+    </div>`).join('');
+  el.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.addEventListener('change', () => toggleShoppingItem(cb.dataset.id)));
+  el.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => removeShoppingItem(btn.dataset.id)));
+}
+
+
+/* ---- Bulk tracking (Home) ---- */
+function renderBulkTrackingCard() {
+  const card = document.getElementById('bulkTrackingCard');
+  const sortedWeights = [...STATE.weightLog].sort((a, b) => a.date.localeCompare(b.date));
+  const currentWeight = sortedWeights.length ? sortedWeights[sortedWeights.length - 1].kg : null;
+  const monthAgo = shiftDate(-30);
+  const monthEntries = sortedWeights.filter(w => w.date >= monthAgo);
+  let monthlyChange = null;
+  if (monthEntries.length >= 2) {
+    monthlyChange = +(n(monthEntries[monthEntries.length - 1].kg) - n(monthEntries[0].kg)).toFixed(1);
+  }
+
+  let html = `<div class="bulk-track-row">
+    <div class="bulk-track-item"><div class="bt-num">${currentWeight !== null ? currentWeight + 'kg' : '-'}</div><div class="bt-label">⚖️ Mevcut Kilo</div></div>
+    <div class="bulk-track-item"><div class="bt-num">${STATE.targetWeight !== null ? STATE.targetWeight + 'kg' : '-'}</div><div class="bt-label">🎯 Hedef Kilo</div></div>
+    <div class="bulk-track-item"><div class="bt-num">${monthlyChange !== null ? (monthlyChange >= 0 ? '+' : '') + monthlyChange + 'kg' : '-'}</div><div class="bt-label">📈 Aylık Değişim</div></div>
+  </div>
+  <div class="btn-row">
+    <input type="number" id="targetWeightInput" placeholder="Hedef kilo (kg)" step="0.1" value="${STATE.targetWeight !== null ? STATE.targetWeight : ''}">
+    <button class="btn small" onclick="saveTargetWeight()">Kaydet</button>
+  </div>`;
+
+  if (STATE.goals.mode === 'bulk' && monthlyChange !== null && monthlyChange < 0.5) {
+    html += `<div class="bulk-suggestion">💡 Kilo artışın yavaş görünüyor. Kalorini günlük yaklaşık 200-300 kcal artırmayı düşünebilirsin.</div>`;
+  }
+  card.innerHTML = html;
+}
+
+function saveTargetWeight() {
+  const val = document.getElementById('targetWeightInput').value;
+  STATE.targetWeight = val ? Number(val) : null;
+  markDirty();
+  renderBulkTrackingCard();
+  flashStatus('Hedef kilo kaydedildi ✓');
+}
+
+function renderModeButtons() {
+  const el = document.getElementById('goalModeTabs');
+  const options = [['bulk', 'Bulk'], ['maintenance', 'Maintenance'], ['cut', 'Cut']];
+  el.innerHTML = options.map(([val, label]) =>
+    `<div class="filter-tab ${STATE.goals.mode === val ? 'active' : ''}" data-val="${val}">${label}</div>`
+  ).join('');
+  el.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.addEventListener('click', () => applyGoalMode(tab.dataset.val));
+  });
+}
+
+function applyGoalMode(mode) {
+  const b = STATE.goals.baseline;
+  let kcal, protein, carbs, fat;
+  if (mode === 'bulk') {
+    kcal = b.kcal + 300; protein = b.protein; carbs = b.carbs + 40; fat = b.fat + 5;
+  } else if (mode === 'cut') {
+    kcal = Math.max(1200, b.kcal - 500); protein = b.protein + 15; carbs = Math.max(50, b.carbs - 60); fat = Math.max(30, b.fat - 10);
+  } else {
+    kcal = b.kcal; protein = b.protein; carbs = b.carbs; fat = b.fat;
+  }
+  STATE.goals.mode = mode;
+  STATE.goals.kcal = kcal; STATE.goals.protein = protein; STATE.goals.carbs = carbs; STATE.goals.fat = fat;
+  markDirty();
+  renderNutrition();
+  flashStatus(`${mode === 'bulk' ? 'Bulk' : mode === 'cut' ? 'Cut' : 'Maintenance'} moduna geçildi ✓`);
+}
+
+function saveGoals() {
+  STATE.goals.kcal = Number(document.getElementById('goalKcal').value) || 2800;
+  STATE.goals.protein = Number(document.getElementById('goalProtein').value) || 160;
+  STATE.goals.carbs = Number(document.getElementById('goalCarbs').value) || 350;
+  STATE.goals.fat = Number(document.getElementById('goalFat').value) || 80;
+  // Maintenance IS the reference baseline — editing it while in maintenance mode updates the baseline too.
+  // Editing while in bulk/cut mode only overrides the active targets, baseline (maintenance reference) stays untouched.
+  if (STATE.goals.mode === 'maintenance') {
+    STATE.goals.baseline = { kcal: STATE.goals.kcal, protein: STATE.goals.protein, carbs: STATE.goals.carbs, fat: STATE.goals.fat };
+  }
+  markDirty();
+  renderNutrition();
+  flashStatus('Hedefler kaydedildi ✓');
+}
+
+
+/* ===================== WATER ===================== */
+function renderWater() {
+  document.getElementById('waterDate').textContent = formatDateTR(currentDate);
+  const total = STATE.water[currentDate] || 0;
+  document.getElementById('waterTotal').textContent = total;
+  document.getElementById('waterGoalDisplay').textContent = STATE.goals.water;
+  document.getElementById('waterBar').style.width = Math.min(100, total / STATE.goals.water * 100) + '%';
+  document.getElementById('goalWater').value = STATE.goals.water;
+}
+function addWater(amount) {
+  const cur = STATE.water[currentDate] || 0;
+  STATE.water[currentDate] = Math.max(0, cur + amount);
+  markDirty();
+  renderWater();
+}
+function saveWaterGoal() {
+  STATE.goals.water = Number(document.getElementById('goalWater').value) || 3000;
+  markDirty();
+  renderWater();
+  flashStatus('Su hedefi kaydedildi ✓');
+}
+
+/* ===================== ANALYTICS HELPERS ===================== */
+function shiftDate(deltaDays) {
+  const d = new Date();
+  d.setDate(d.getDate() + deltaDays);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function inRange(dateStr, range) {
+  if (!range) return true;
+  return dateStr >= range.start && dateStr <= range.end;
+}
+function getRangeForFilter(filter) {
+  if (filter === 'all') return null;
+  const days = Number(filter);
+  return { start: shiftDate(-(days - 1)), end: todayStr() };
+}
+function getWeekRange(offsetWeeks) {
+  const endD = new Date(); endD.setDate(endD.getDate() - offsetWeeks * 7);
+  const startD = new Date(endD); startD.setDate(startD.getDate() - 6);
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return { start: fmt(startD), end: fmt(endD) };
+}
+
+function getAllWorkoutEntriesFlat() {
+  const list = [];
+  Object.keys(STATE.workouts).forEach(key => {
+    const date = key.split('|')[0];
+    Object.keys(STATE.workouts[key]).forEach(exSlug => {
+      const entry = STATE.workouts[key][exSlug];
+      if (entry && entry.sets && entry.sets.some(s => s.kg || s.reps)) {
+        list.push({ date, exSlug, sets: entry.sets });
+      }
+    });
+  });
+  return list;
+}
+
+function getWorkoutDaysInRange(range) {
+  const flat = getAllWorkoutEntriesFlat().filter(e => inRange(e.date, range));
+  return new Set(flat.map(e => e.date)).size;
+}
+function getTotalSetsInRange(range) {
+  const flat = getAllWorkoutEntriesFlat().filter(e => inRange(e.date, range));
+  return flat.reduce((sum, e) => sum + e.sets.filter(s => s.kg || s.reps).length, 0);
+}
+function getTotalVolumeInRange(range) {
+  const flat = getAllWorkoutEntriesFlat().filter(e => inRange(e.date, range));
+  return flat.reduce((sum, e) => sum + entryVolume(e), 0);
+}
+
+function getNutritionAveragesInRange(range) {
+  const dates = Object.keys(STATE.meals).filter(d => inRange(d, range));
+  if (dates.length === 0) return { kcal: 0, protein: 0, carbs: 0, fat: 0, days: 0 };
+  let totals = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+  dates.forEach(d => {
+    Object.values(STATE.meals[d]).forEach(items => items.forEach(it => {
+      totals.kcal += n(it.kcal); totals.protein += n(it.protein); totals.carbs += n(it.carbs); totals.fat += n(it.fat);
+    }));
+  });
+  return { kcal: totals.kcal / dates.length, protein: totals.protein / dates.length, carbs: totals.carbs / dates.length, fat: totals.fat / dates.length, days: dates.length };
+}
+function getWaterAverageInRange(range) {
+  const dates = Object.keys(STATE.water).filter(d => inRange(d, range));
+  if (dates.length === 0) return { avg: 0, days: 0 };
+  const total = dates.reduce((sum, d) => sum + n(STATE.water[d]), 0);
+  return { avg: total / dates.length, days: dates.length };
+}
+function getGoalSuccessPct(range) {
+  const dateSet = new Set([...Object.keys(STATE.meals), ...Object.keys(STATE.water)].filter(d => inRange(d, range)));
+  if (dateSet.size === 0) return null;
+  let met = 0, total = 0;
+  dateSet.forEach(d => {
+    const meals = STATE.meals[d];
+    if (meals) {
+      let p = 0; Object.values(meals).forEach(items => items.forEach(it => { p += n(it.protein); }));
+      if (p > 0) { total++; if (p >= STATE.goals.protein) met++; }
+    }
+    if (STATE.water[d] !== undefined) {
+      total++; if (STATE.water[d] >= STATE.goals.water) met++;
+    }
+  });
+  return total === 0 ? null : Math.round(met / total * 100);
+}
+
+function getExerciseTimeSeries(exSlug, range) {
+  return getAllEntriesForExercise(exSlug)
+    .filter(e => inRange(e.date, range))
+    .map(e => ({ date: e.date, maxWeight: entryMaxWeight(e), volume: entryVolume(e), oneRM: entryBest1RM(e), bestReps: n((entryBestSet(e) || {}).reps) }));
+}
+
+function getWeeklyTopImprovement() {
+  const week0 = getWeekRange(0);
+  const flat = getAllWorkoutEntriesFlat();
+  const exSlugsThisWeek = [...new Set(flat.filter(e => inRange(e.date, week0)).map(e => e.exSlug))];
+  let best = null;
+  exSlugsThisWeek.forEach(exSlug => {
+    const all = getAllEntriesForExercise(exSlug);
+    const thisWeek = all.filter(e => inRange(e.date, week0));
+    const before = all.filter(e => e.date < week0.start);
+    if (thisWeek.length === 0 || before.length === 0) return;
+    const thisMax = Math.max(...thisWeek.map(entryMaxWeight));
+    const beforeMax = Math.max(...before.map(entryMaxWeight));
+    const diff = +(thisMax - beforeMax).toFixed(2);
+    if (diff > 0 && (!best || diff > best.diff)) best = { exSlug, diff, from: beforeMax, to: thisMax };
+  });
+  return best;
+}
+
+/* ---- Coach comment: cross-domain analysis (workout + weight + nutrition + water + creatine) ---- */
+function getTopImprovementsInRange(range, limit) {
+  const flat = getAllWorkoutEntriesFlat();
+  const exSlugsInRange = [...new Set(flat.filter(e => inRange(e.date, range)).map(e => e.exSlug))];
+  const results = [];
+  exSlugsInRange.forEach(exSlug => {
+    const all = getAllEntriesForExercise(exSlug);
+    const inRangeEntries = all.filter(e => inRange(e.date, range));
+    const beforeEntries = all.filter(e => e.date < range.start);
+    if (inRangeEntries.length === 0 || beforeEntries.length === 0) return;
+    const afterMax = Math.max(...inRangeEntries.map(entryMaxWeight));
+    const beforeMax = Math.max(...beforeEntries.map(entryMaxWeight));
+    const diff = +(afterMax - beforeMax).toFixed(2);
+    if (diff > 0) results.push({ exSlug, from: beforeMax, to: afterMax, diff });
+  });
+  results.sort((a, b) => b.diff - a.diff);
+  return results.slice(0, limit || 3);
+}
+
+function countCreatineDaysInRange(range) {
+  return Object.keys(STATE.creatine).filter(d => STATE.creatine[d] && inRange(d, range)).length;
+}
+
+function getWeightChangeInRange(range) {
+  const entries = STATE.weightLog.filter(w => inRange(w.date, range)).sort((a, b) => a.date.localeCompare(b.date));
+  if (entries.length < 2) return null;
+  return {
+    from: n(entries[0].kg),
+    to: n(entries[entries.length - 1].kg),
+    change: +(n(entries[entries.length - 1].kg) - n(entries[0].kg)).toFixed(1)
+  };
+}
+
+function renderCoachCommentCard() {
+  const card = document.getElementById('coachCommentCard');
+  const range7 = getRangeForFilter('7');
+  const range30 = getRangeForFilter('30');
+
+  const workoutDays7 = getWorkoutDaysInRange(range7);
+  const nutAvg7 = getNutritionAveragesInRange(range7);
+  const waterAvg7 = getWaterAverageInRange(range7);
+  const proteinPct = STATE.goals.protein > 0 ? Math.round(nutAvg7.protein / STATE.goals.protein * 100) : 0;
+  const waterPct = STATE.goals.water > 0 ? Math.round(waterAvg7.avg / STATE.goals.water * 100) : 0;
+  const creatineDays7 = countCreatineDaysInRange(range7);
+  const weightChange7 = getWeightChangeInRange(range7);
+  const weightChange30 = getWeightChangeInRange(range30);
+  const topImprovements = getTopImprovementsInRange(range30, 3);
+
+  let html = '';
+
+  html += `<div class="coach-section-title">🔥 Bugünkü Durum</div>`;
+  html += `<div class="coach-line">Bu hafta <b>${workoutDays7}</b> antrenman yaptın.</div>`;
+  html += `<div class="coach-line">🥩 Protein hedefi: <b>%${proteinPct}</b></div>`;
+  html += `<div class="coach-line">💧 Su hedefi: <b>%${waterPct}</b></div>`;
+  html += `<div class="coach-line">🧪 Kreatin kullanımı: <b>${creatineDays7}/7 gün</b></div>`;
+  if (weightChange7) {
+    html += `<div class="coach-line">⚖️ Kilo değişimi (7 gün): <b>${weightChange7.change >= 0 ? '+' : ''}${weightChange7.change}kg</b></div>`;
+  }
+
+  if (topImprovements.length > 0) {
+    html += `<div class="coach-section-title">📈 Güç Analizi (son 30 gün)</div>`;
+    topImprovements.forEach(t => {
+      const name = EXERCISE_NAME_BY_SLUG[t.exSlug] || t.exSlug;
+      html += `<div class="coach-line">${name}: <b>${t.from}kg → ${t.to}kg (+${t.diff}kg)</b></div>`;
+    });
+    const topName = EXERCISE_NAME_BY_SLUG[topImprovements[0].exSlug] || topImprovements[0].exSlug;
+    html += `<div class="coach-highlight">🏆 Bu ayın en iyi gelişen hareketi: <b>${topName}</b></div>`;
+
+    const topStats = getExerciseStats(topImprovements[0].exSlug);
+    if (topStats.nextTarget) {
+      html += `<div class="coach-section-title">🎯 Önerim</div>`;
+      html += `<div class="coach-line">${topName} için sonraki hedefin: <b>${topStats.nextTarget}</b></div>`;
+    }
+  } else {
+    html += `<div class="coach-section-title">📈 Güç Analizi</div><div class="coach-line" style="color:#888">Henüz karşılaştırılacak yeterli antrenman verisi yok.</div>`;
+  }
+
+  const warnings = [];
+  if (waterPct > 0 && waterPct < 80) {
+    warnings.push(`Son 7 günde ortalama su tüketimin <b>${(waterAvg7.avg / 1000).toFixed(1)}L</b>, hedefin <b>${(STATE.goals.water / 1000).toFixed(1)}L</b>. Su tüketimini artırman performansına katkı sağlayabilir.`);
+  }
+  if (proteinPct > 0 && proteinPct < 80) {
+    warnings.push(`Son 7 günde ortalama proteinin hedefinin <b>%${proteinPct}</b>'inde kaldı. Protein alımını artırmayı düşünebilirsin.`);
+  }
+  if (STATE.goals.mode === 'bulk' && weightChange30 && weightChange30.change < 0.5) {
+    warnings.push(`Son 30 günde kilon <b>${weightChange30.from}kg → ${weightChange30.to}kg</b> değişti — bulk için beklenenden yavaş. Günlük yaklaşık <b>250-350 kcal</b> daha eklemeyi düşünebilirsin (örn. 1 muz + 1 ölçek whey + 300ml süt).`);
+  }
+  if (STATE.goals.mode === 'cut' && weightChange30 && weightChange30.change >= 0) {
+    warnings.push(`Son 30 günde kilon <b>${weightChange30.from}kg → ${weightChange30.to}kg</b> değişti — cut hedefine göre beklenen düşüş görünmüyor. Kalori açığını gözden geçirebilirsin.`);
+  }
+
+  if (warnings.length > 0) {
+    html += `<div class="coach-section-title">⚠️ Dikkat</div>`;
+    warnings.forEach(w => { html += `<div class="coach-warning">${w}</div>`; });
+  }
+
+  card.innerHTML = html || `<div class="no-history">Henüz yeterli veri yok, birkaç gün kullanınca burada kişisel yorumların oluşacak.</div>`;
+}
+
+function getMotivationScores() {
+  const range = { start: shiftDate(-6), end: todayStr() };
+  const trainingDaysExpected = DAYS.filter(d => !PROGRAM[d].rest).length || 1;
+  const workoutScore = Math.min(100, Math.round(getWorkoutDaysInRange(range) / trainingDaysExpected * 100));
+
+  const nutAvg = getNutritionAveragesInRange(range);
+  const nutScore = STATE.goals.protein > 0 ? Math.min(100, Math.round(nutAvg.protein / STATE.goals.protein * 100)) : 0;
+
+  const waterAvg = getWaterAverageInRange(range);
+  const waterScore = STATE.goals.water > 0 ? Math.min(100, Math.round(waterAvg.avg / STATE.goals.water * 100)) : 0;
+
+  const loggedDays = new Set();
+  getAllWorkoutEntriesFlat().filter(e => inRange(e.date, range)).forEach(e => loggedDays.add(e.date));
+  Object.keys(STATE.meals).filter(d => inRange(d, range)).forEach(d => loggedDays.add(d));
+  Object.keys(STATE.water).filter(d => inRange(d, range)).forEach(d => loggedDays.add(d));
+  const consistencyScore = Math.min(100, Math.round(loggedDays.size / 7 * 100));
+
+  const overall = Math.round((workoutScore + nutScore + waterScore + consistencyScore) / 4);
+  return { workoutScore, nutScore, waterScore, consistencyScore, overall };
+}
+
+/* simple inline SVG line chart */
+function buildLineChartSVG(points) {
+  if (!points || points.length === 0) return '<div class="no-history">Henüz yeterli veri yok</div>';
+  if (points.length === 1) return `<div class="no-history">Tek veri noktası: ${points[0].y}</div>`;
+  const w = 300, h = 110, pad = 10;
+  const ys = points.map(p => p.y);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const range = (maxY - minY) || 1;
+  const stepX = (w - 2 * pad) / (points.length - 1);
+  const coords = points.map((p, i) => {
+    const x = pad + i * stepX;
+    const y = h - pad - ((p.y - minY) / range) * (h - 2 * pad);
+    return [x, y];
+  });
+  const line = coords.map(c => c.join(',')).join(' ');
+  const last = coords[coords.length - 1];
+  const first = coords[0];
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%; height:110px;">
+    <polyline points="${line}" fill="none" stroke="#ff6b35" stroke-width="2.5"/>
+    <circle cx="${first[0]}" cy="${first[1]}" r="3" fill="#555"/>
+    <circle cx="${last[0]}" cy="${last[1]}" r="4" fill="#ff6b35"/>
+  </svg>`;
+}
+
+
+/* ===================== STREAK & ACHIEVEMENTS ===================== */
+function addDaysToDateStr(dateStr, delta) {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + delta);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// A day counts as "successful" (for streak purposes) when at least 2 of these 3 are true:
+// - workout logged (only required on training days; rest days auto-satisfy this one)
+// - protein >= 80% of goal that day
+// - water >= 80% of goal that day
+// Simply opening the app does not create any of this data, so it can never count on its own.
+function isDaySuccessful(dateStr) {
+  const dayName = getDayNameFromDate(dateStr);
+  const dayInfo = PROGRAM[dayName];
+  const isTrainingDay = dayInfo && !dayInfo.rest;
+
+  let workoutDone = true;
+  if (isTrainingDay) {
+    workoutDone = getAllWorkoutEntriesFlat().some(e => e.date === dateStr);
+  }
+
+  let proteinMet = false;
+  const meals = STATE.meals[dateStr];
+  if (meals) {
+    let p = 0;
+    Object.values(meals).forEach(items => items.forEach(it => { p += n(it.protein); }));
+    proteinMet = STATE.goals.protein > 0 && p >= STATE.goals.protein * 0.8;
+  }
+
+  const water = STATE.water[dateStr];
+  const waterMet = water !== undefined && STATE.goals.water > 0 && water >= STATE.goals.water * 0.8;
+
+  const metCount = [workoutDone, proteinMet, waterMet].filter(Boolean).length;
+  return metCount >= 2;
+}
+
+function computeCurrentStreak() {
+  let streak = 0;
+  let date = todayStr();
+  if (!isDaySuccessful(date)) date = addDaysToDateStr(date, -1); // today not finished yet — don't break streak, don't count it either
+  while (isDaySuccessful(date)) {
+    streak++;
+    date = addDaysToDateStr(date, -1);
+  }
+  return streak;
+}
+
+function getEarliestDataDate() {
+  const dates = [];
+  Object.keys(STATE.workouts).forEach(k => dates.push(k.split('|')[0]));
+  Object.keys(STATE.meals).forEach(d => dates.push(d));
+  Object.keys(STATE.water).forEach(d => dates.push(d));
+  STATE.weightLog.forEach(w => dates.push(w.date));
+  if (dates.length === 0) return todayStr();
+  return dates.sort()[0];
+}
+
+function getLongestStreakEver() {
+  let date = getEarliestDataDate();
+  const end = todayStr();
+  let longest = 0, current = 0, iterations = 0;
+  while (date <= end && iterations < 3650) {
+    if (isDaySuccessful(date)) { current++; longest = Math.max(longest, current); }
+    else { current = 0; }
+    date = addDaysToDateStr(date, 1);
+    iterations++;
+  }
+  return longest;
+}
+
+function countDaysGoalMet(type) {
+  if (type === 'protein') {
+    return Object.keys(STATE.meals).filter(d => {
+      let p = 0;
+      Object.values(STATE.meals[d]).forEach(items => items.forEach(it => { p += n(it.protein); }));
+      return p >= STATE.goals.protein;
+    }).length;
+  }
+  if (type === 'water') {
+    return Object.keys(STATE.water).filter(d => n(STATE.water[d]) >= STATE.goals.water).length;
+  }
+  return 0;
+}
+
+const ACHIEVEMENTS = [
+  { id: 'first-pr', icon: '🏆', name: 'İlk PR', check: () => getAllWorkoutEntriesFlat().length > 0 },
+  { id: 'streak7', icon: '🔥', name: '7 Gün Seri', check: () => getLongestStreakEver() >= 7 },
+  { id: 'workouts10', icon: '💪', name: '10 Antrenman', check: () => getWorkoutDaysInRange(null) >= 10 },
+  { id: 'protein7', icon: '🥩', name: '7 Gün Protein Hedefi', check: () => countDaysGoalMet('protein') >= 7 },
+  { id: 'water10', icon: '💧', name: '10 Gün Su Hedefi', check: () => countDaysGoalMet('water') >= 10 },
+  { id: 'workouts50', icon: '🏋️', name: '50 Antrenman', check: () => getWorkoutDaysInRange(null) >= 50 },
+  { id: 'volume100k', icon: '🔥', name: '100.000 KG Toplam Hacim', check: () => getTotalVolumeInRange(null) >= 100000 },
+];
+
+function renderStreakBanner() {
+  const streak = computeCurrentStreak();
+  const el = document.getElementById('streakBanner');
+  if (streak > 0) {
+    el.className = 'streak-banner';
+    el.innerHTML = `<div class="streak-num">🔥 ${streak} GÜNLÜK SERİ</div>`;
+  } else {
+    el.className = 'streak-banner zero';
+    el.innerHTML = `<div class="streak-label">Henüz seri yok — bugün başla!</div>`;
+  }
+}
+
+function renderAchievements() {
+  const el = document.getElementById('badgesGrid');
+  el.innerHTML = ACHIEVEMENTS.map(a => {
+    const unlocked = a.check();
+    return `<div class="badge-card ${unlocked ? 'unlocked' : ''}">
+      <div class="badge-icon">${a.icon}</div>
+      <div class="badge-name">${a.name}</div>
+      ${unlocked ? '' : '<div class="badge-lock">🔒 Kilitli</div>'}
+    </div>`;
+  }).join('');
+}
+
+
+let exerciseChartMetric = 'weight';
+let selectedExerciseSlug = null;
+
+function renderProgressFilterTabs() {
+  const el = document.getElementById('progressFilterTabs');
+  const options = [['7', '7 gün'], ['30', '30 gün'], ['90', '90 gün'], ['all', 'Tüm zamanlar']];
+  el.innerHTML = options.map(([val, label]) =>
+    `<div class="filter-tab ${progressFilter === val ? 'active' : ''}" data-val="${val}">${label}</div>`
+  ).join('');
+  el.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.addEventListener('click', () => { progressFilter = tab.dataset.val; renderProgress(); });
+  });
+}
+
+function renderMetricTabs() {
+  const el = document.getElementById('metricTabs');
+  const options = [['weight', 'Ağırlık'], ['reps', 'Tekrar'], ['volume', 'Hacim'], ['oneRM', '1RM']];
+  el.innerHTML = options.map(([val, label]) =>
+    `<div class="metric-tab ${exerciseChartMetric === val ? 'active' : ''}" data-val="${val}">${label}</div>`
+  ).join('');
+  el.querySelectorAll('.metric-tab').forEach(tab => {
+    tab.addEventListener('click', () => { exerciseChartMetric = tab.dataset.val; renderExerciseChart(); });
+  });
+}
+
+function renderExerciseSelect() {
+  const el = document.getElementById('exerciseSelect');
+  const slugs = Object.keys(EXERCISE_NAME_BY_SLUG).sort((a, b) => EXERCISE_NAME_BY_SLUG[a].localeCompare(EXERCISE_NAME_BY_SLUG[b], 'tr'));
+  if (!selectedExerciseSlug || !slugs.includes(selectedExerciseSlug)) selectedExerciseSlug = slugs[0];
+  el.innerHTML = slugs.map(s => `<option value="${s}" ${s === selectedExerciseSlug ? 'selected' : ''}>${EXERCISE_NAME_BY_SLUG[s]}</option>`).join('');
+  el.onchange = () => { selectedExerciseSlug = el.value; renderExerciseChart(); };
+}
+
+function renderExerciseChart() {
+  const range = getRangeForFilter(progressFilter);
+  const series = getExerciseTimeSeries(selectedExerciseSlug, range);
+  const metricKey = { weight: 'maxWeight', reps: 'bestReps', volume: 'volume', oneRM: 'oneRM' }[exerciseChartMetric];
+  const points = series.filter(p => p[metricKey] > 0).map((p, i) => ({ x: i, y: p[metricKey] }));
+  document.getElementById('exerciseChart').innerHTML = buildLineChartSVG(points);
+  const unit = exerciseChartMetric === 'reps' ? ' tekrar' : 'kg';
+  if (points.length >= 2) {
+    const first = points[0].y, last = points[points.length - 1].y;
+    const diff = +(last - first).toFixed(1);
+    const sign = diff >= 0 ? '+' : '';
+    document.getElementById('exerciseChartSummary').textContent = `${first}${unit} → ${last}${unit}  (${sign}${diff}${unit})`;
+  } else {
+    document.getElementById('exerciseChartSummary').textContent = points.length === 1 ? `Tek veri: ${points[0].y}${unit}` : 'Bu dönemde veri yok';
+  }
+}
+
+function getProteinExtremesInRange(range) {
+  const dates = Object.keys(STATE.meals).filter(d => inRange(d, range));
+  let max = null, min = null;
+  dates.forEach(d => {
+    let p = 0;
+    Object.values(STATE.meals[d]).forEach(items => items.forEach(it => { p += n(it.protein); }));
+    if (p <= 0) return;
+    if (!max || p > max.val) max = { date: d, val: Math.round(p) };
+    if (!min || p < min.val) min = { date: d, val: Math.round(p) };
+  });
+  return max ? { max, min } : null;
+}
+
+function renderWeeklyReport() {
+  const week0 = getWeekRange(0), week1 = getWeekRange(1);
+  const w0Days = getWorkoutDaysInRange(week0), w1Days = getWorkoutDaysInRange(week1);
+  const w0Vol = getTotalVolumeInRange(week0), w1Vol = getTotalVolumeInRange(week1);
+  const w0Nut = getNutritionAveragesInRange(week0), w1Nut = getNutritionAveragesInRange(week1);
+  const w0Water = getWaterAverageInRange(week0), w1Water = getWaterAverageInRange(week1);
+  const w0Goal = getGoalSuccessPct(week0);
+
+  const w0WeightEntries = STATE.weightLog.filter(w => inRange(w.date, week0)).sort((a, b) => a.date.localeCompare(b.date));
+  let weightChange = null;
+  if (w0WeightEntries.length >= 2) {
+    weightChange = +(n(w0WeightEntries[w0WeightEntries.length - 1].kg) - n(w0WeightEntries[0].kg)).toFixed(1);
+  }
+
+  const rowsHTML = [
+    ['🏋️ Antrenman sayısı', w0Days, w1Days],
+    ['📊 Toplam hacim', Math.round(w0Vol).toLocaleString('tr-TR') + 'kg', Math.round(w1Vol).toLocaleString('tr-TR') + 'kg'],
+    ['🥩 Ort. protein', Math.round(w0Nut.protein) + 'g', Math.round(w1Nut.protein) + 'g'],
+    ['💧 Ort. su', Math.round(w0Water.avg) + 'ml', Math.round(w1Water.avg) + 'ml'],
+  ].map(([label, v0, v1]) => `
+    <div class="weekly-report-row"><span>${label}</span><b>${v0} <span class="wr-delta" style="color:#888">(önceki hafta: ${v1})</span></b></div>
+  `).join('');
+
+  const weightRow = `<div class="weekly-report-row"><span>⚖️ Kilo değişimi</span><b>${weightChange === null ? 'Yeterli veri yok' : (weightChange >= 0 ? '+' : '') + weightChange + 'kg'}</b></div>`;
+  const goalRow = `<div class="weekly-report-row"><span>🎯 Hedef başarısı</span><b>${w0Goal === null ? '-' : w0Goal + '%'}</b></div>`;
+
+  const top = getWeeklyTopImprovement();
+  const topHTML = top
+    ? `<div class="top-improvement"><div>🏆 Haftanın en çok gelişen hareketi</div><div class="ti-name">${EXERCISE_NAME_BY_SLUG[top.exSlug] || top.exSlug}</div><div class="ti-delta">+${top.diff}kg</div></div>`
+    : `<div class="top-improvement" style="color:#888">Bu hafta karşılaştırılacak yeterli veri yok</div>`;
+
+  const proteinExtremes = getProteinExtremesInRange(week0);
+  const proteinExtremesHTML = proteinExtremes
+    ? `<div class="weekly-report-row"><span>🥩 En yüksek protein günü</span><b>${formatDateTR(proteinExtremes.max.date).split(' ').slice(0,2).join(' ')} — ${proteinExtremes.max.val}g</b></div>
+       <div class="weekly-report-row"><span>🥩 En düşük protein günü</span><b>${formatDateTR(proteinExtremes.min.date).split(' ').slice(0,2).join(' ')} — ${proteinExtremes.min.val}g</b></div>`
+    : '';
+
+  document.getElementById('weeklyReportCard').innerHTML = rowsHTML + weightRow + goalRow + proteinExtremesHTML + topHTML;
+}
+
+function renderProgress() {
+  renderProgressFilterTabs();
+  const range = getRangeForFilter(progressFilter);
+
+  document.getElementById('statWorkoutDays').textContent = getWorkoutDaysInRange(range);
+  document.getElementById('statTotalSets').textContent = getTotalSetsInRange(range);
+  document.getElementById('statTotalVolume').textContent = Math.round(getTotalVolumeInRange(range)).toLocaleString('tr-TR') + 'kg';
+  const goalPct = getGoalSuccessPct(range);
+  document.getElementById('statGoalSuccess').textContent = goalPct === null ? '-' : goalPct + '%';
+  const nutAvg = getNutritionAveragesInRange(range);
+  document.getElementById('statAvgProtein').textContent = Math.round(nutAvg.protein) + 'g';
+  document.getElementById('statAvgKcal').textContent = Math.round(nutAvg.kcal);
+  const waterAvg = getWaterAverageInRange(range);
+  document.getElementById('statAvgWater').textContent = Math.round(waterAvg.avg) + 'ml';
+
+  const weightPoints = [...STATE.weightLog]
+    .filter(w => inRange(w.date, range))
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((w, i) => ({ x: i, y: n(w.kg) }));
+  document.getElementById('weightChart').innerHTML = buildLineChartSVG(weightPoints);
+
+  document.getElementById('weightDate').value ? null : (document.getElementById('weightDate').value = currentDate);
+  const list = document.getElementById('weightList');
+  const sorted = [...STATE.weightLog].sort((a, b) => b.date.localeCompare(a.date));
+  list.innerHTML = sorted.length === 0
+    ? '<div style="color:#888; font-size:13px; text-align:center; padding:10px;">Henüz kilo girilmedi</div>'
+    : sorted.slice(0, 10).map(w => `<div class="weight-entry"><span>${formatDateTR(w.date)}</span><span>${w.kg} kg</span></div>`).join('');
+
+  renderExerciseSelect();
+  renderMetricTabs();
+  renderExerciseChart();
+  renderWeeklyReport();
+
+  const waterCard = document.getElementById('waterHistoryCard');
+  const days = [];
+  for (let i = 6; i >= 0; i--) days.push(shiftDate(-i));
+  waterCard.innerHTML = days.map(ds => `
+    <div class="weight-entry">
+      <span>${formatDateTR(ds)}</span>
+      <span>${STATE.water[ds] || 0} ml</span>
+    </div>`).join('');
+
+  if (!document.getElementById('photoDateInput').value) document.getElementById('photoDateInput').value = currentDate;
+  renderPhotosGallery();
+}
+
+/* ---- Body progress photos ---- */
+const PHOTO_CATEGORIES = { front: 'Ön', side: 'Yan', back: 'Arka' };
+
+function compressImageFile(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else if (h >= w && h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => reject(new Error('image load failed'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('file read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function formatDateShort(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+}
+
+function renderPhotosGallery() {
+  const el = document.getElementById('photosGallery');
+  el.innerHTML = Object.keys(PHOTO_CATEGORIES).map(catKey => {
+    const catLabel = PHOTO_CATEGORIES[catKey];
+    const photos = STATE.photos.filter(p => p.category === catKey).sort((a, b) => a.date.localeCompare(b.date));
+    if (photos.length === 0) {
+      return `<div class="photo-row"><div class="photo-row-label">${catLabel}</div><div class="no-history">Henüz fotoğraf yok</div></div>`;
+    }
+    const thumbs = photos.map(p => `
+      <div class="photo-thumb">
+        <img src="${p.dataUrl}" alt="${catLabel}">
+        <div class="photo-thumb-date">${formatDateShort(p.date)}</div>
+        <div class="photo-thumb-del" data-id="${p.id}">✕</div>
+      </div>`).join('');
+    return `<div class="photo-row"><div class="photo-row-label">${catLabel}</div><div class="photo-thumbs-scroll">${thumbs}</div></div>`;
+  }).join('');
+  el.querySelectorAll('.photo-thumb-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      STATE.photos = STATE.photos.filter(p => p.id !== btn.dataset.id);
+      markDirty();
+      renderPhotosGallery();
+    });
+  });
+}
+
+function setupPhotoInputs() {
+  const map = { photoInputFront: 'front', photoInputSide: 'side', photoInputBack: 'back' };
+  Object.keys(map).forEach(inputId => {
+    const input = document.getElementById(inputId);
+    input.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const dataUrl = await compressImageFile(file, 500, 0.6);
+        const date = document.getElementById('photoDateInput').value || todayStr();
+        STATE.photos.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2, 7), date, category: map[inputId], dataUrl });
+        markDirty();
+        renderPhotosGallery();
+        flashStatus('Fotoğraf eklendi ✓');
+      } catch (err) {
+        flashStatus('Fotoğraf işlenemedi');
+      }
+      e.target.value = '';
+    });
+  });
+}
+
+
+function addWeightEntry() {
+  const date = document.getElementById('weightDate').value || currentDate;
+  const kg = document.getElementById('weightValue').value;
+  if (!kg) return;
+  STATE.weightLog = STATE.weightLog.filter(w => w.date !== date);
+  STATE.weightLog.push({ date, kg });
+  document.getElementById('weightValue').value = '';
+  markDirty();
+  renderProgress();
+}
+
+/* ===================== HOME ===================== */
+function renderHome() {
+  document.getElementById('homeDate').textContent = formatDateTR(currentDate);
+  const data = nutritionDayData();
+  let totals = { kcal: 0, protein: 0 };
+  Object.values(data).forEach(items => items.forEach(it => {
+    totals.kcal += Number(it.kcal) || 0;
+    totals.protein += Number(it.protein) || 0;
+  }));
+  document.getElementById('homeKcal').textContent = Math.round(totals.kcal);
+  document.getElementById('homeKcalGoal').textContent = STATE.goals.kcal;
+  document.getElementById('homeKcalBar').style.width = Math.min(100, totals.kcal / STATE.goals.kcal * 100) + '%';
+
+  document.getElementById('homeProtein').textContent = Math.round(totals.protein);
+  document.getElementById('homeProteinGoal').textContent = STATE.goals.protein;
+  document.getElementById('homeProteinBar').style.width = Math.min(100, totals.protein / STATE.goals.protein * 100) + '%';
+
+  const water = STATE.water[currentDate] || 0;
+  document.getElementById('homeWater').textContent = water;
+  document.getElementById('homeWaterGoal').textContent = STATE.goals.water;
+  document.getElementById('homeWaterBar').style.width = Math.min(100, water / STATE.goals.water * 100) + '%';
+
+  const dayInfo = PROGRAM[getDayNameFromDate(currentDate)];
+  document.getElementById('homeWorkoutName').textContent = dayInfo.rest ? 'Dinlenme günü 😴' : (dayInfo.groups.map(g => g.name).join(' + '));
+
+  renderTodayTargetCard(dayInfo);
+  renderMotivationCard();
+  renderStreakBanner();
+  renderAchievements();
+  renderDailyGoalsCard(totals, water);
+  renderCreatineCard();
+  renderWhatToEatCard();
+  renderBulkTrackingCard();
+  renderCoachCommentCard();
+  checkReminders();
+}
+
+function renderDailyGoalsCard(totals, water) {
+  const kcalMet = totals.kcal >= STATE.goals.kcal * 0.9;
+  const proteinMet = totals.protein >= STATE.goals.protein;
+  const waterMet = water >= STATE.goals.water;
+  const creatineMet = !!STATE.creatine[currentDate];
+
+  const rows = [
+    ['🥩', 'Protein', proteinMet],
+    ['💧', 'Su', waterMet],
+    ['🧪', 'Kreatin', creatineMet],
+    ['🔥', 'Kalori', kcalMet],
+  ];
+  document.getElementById('dailyGoalsCard').innerHTML = rows.map(([icon, label, met]) => `
+    <div class="goal-check-row ${met ? 'met' : ''}">
+      <span class="gc-icon">${icon}</span>
+      <span class="gc-label">${label}</span>
+      <span class="gc-status">${met ? '✅' : '⬜'}</span>
+    </div>`).join('');
+}
+
+/* ---- Creatine tracking ---- */
+function toggleCreatineToday() {
+  STATE.creatine[currentDate] = !STATE.creatine[currentDate];
+  markDirty();
+  renderHome();
+}
+
+function renderCreatineCard() {
+  const takenToday = !!STATE.creatine[currentDate];
+  const historyDays = [];
+  for (let i = 6; i >= 0; i--) historyDays.push(shiftDate(-i));
+  const historyHTML = historyDays.map(ds => `
+    <div class="creatine-day">
+      <div class="cd-icon">${STATE.creatine[ds] ? '✅' : '❌'}</div>
+      <div>${formatDateShort(ds)}</div>
+    </div>`).join('');
+
+  document.getElementById('creatineCard').innerHTML = `
+    <div class="creatine-today-row">
+      <label for="creatineCheckbox">Bugün — 5g kreatin ${takenToday ? 'içildi' : 'içilmedi'}</label>
+      <input type="checkbox" id="creatineCheckbox" class="creatine-checkbox" ${takenToday ? 'checked' : ''}>
+    </div>
+    <div class="creatine-history-row">${historyHTML}</div>`;
+  document.getElementById('creatineCheckbox').addEventListener('change', toggleCreatineToday);
+}
+
+/* ---- Reminders ---- */
+const notifiedToday = new Set(); // runtime-only, avoids re-notifying every check within the same session
+
+function saveReminderSettings() {
+  STATE.reminders.time = document.getElementById('reminderTimeInput').value || '20:00';
+  STATE.reminders.enabled.creatine = document.getElementById('reminderCreatineToggle').checked;
+  STATE.reminders.enabled.water = document.getElementById('reminderWaterToggle').checked;
+  STATE.reminders.enabled.protein = document.getElementById('reminderProteinToggle').checked;
+  markDirty();
+  flashStatus('Hatırlatma ayarları kaydedildi ✓');
+  checkReminders();
+}
+
+function requestNotifyPermission() {
+  if (!('Notification' in window)) {
+    flashStatus('Tarayıcın bildirimleri desteklemiyor, uygulama içi kart kullanılacak');
+    return;
+  }
+  Notification.requestPermission().then(perm => {
+    flashStatus(perm === 'granted' ? 'Bildirimlere izin verildi ✓' : 'Bildirim izni verilmedi, uygulama içi kart kullanılacak');
+  });
+}
+
+function checkReminders() {
+  // sync settings UI with stored state (only on first paint of these inputs, harmless to repeat)
+  const timeInput = document.getElementById('reminderTimeInput');
+  if (timeInput && document.activeElement !== timeInput) timeInput.value = STATE.reminders.time;
+  const cCheck = document.getElementById('reminderCreatineToggle');
+  const wCheck = document.getElementById('reminderWaterToggle');
+  const pCheck = document.getElementById('reminderProteinToggle');
+  if (cCheck) cCheck.checked = STATE.reminders.enabled.creatine;
+  if (wCheck) wCheck.checked = STATE.reminders.enabled.water;
+  if (pCheck) pCheck.checked = STATE.reminders.enabled.protein;
+
+  const banner = document.getElementById('reminderBanner');
+  if (!banner) return;
+  const time = STATE.reminders.time;
+  if (!time) { banner.innerHTML = ''; return; }
+
+  const now = new Date();
+  const nowHM = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  if (nowHM < time) { banner.innerHTML = ''; return; }
+
+  const today = todayStr();
+  const pending = [];
+  if (STATE.reminders.enabled.creatine && !STATE.creatine[today]) {
+    pending.push({ key: 'creatine', text: '🧪 Kreatinini içmeyi unutma.' });
+  }
+  if (STATE.reminders.enabled.water && (STATE.water[today] || 0) < STATE.goals.water) {
+    pending.push({ key: 'water', text: '💧 Bugünkü su hedefine henüz ulaşmadın.' });
+  }
+  if (STATE.reminders.enabled.protein) {
+    const totals = getNutritionTotalsToday();
+    if (totals.protein < STATE.goals.protein) pending.push({ key: 'protein', text: '🥩 Bugünkü protein hedefine henüz ulaşmadın.' });
+  }
+
+  if (pending.length === 0) { banner.innerHTML = ''; return; }
+  banner.innerHTML = `<div class="reminder-card">${pending.map(p => `<div>${p.text}</div>`).join('')}</div>`;
+
+  if ('Notification' in window && Notification.permission === 'granted') {
+    pending.forEach(p => {
+      const notifyKey = today + '-' + p.key;
+      if (!notifiedToday.has(notifyKey)) {
+        notifiedToday.add(notifyKey);
+        try { new Notification('Fitness App Hatırlatma', { body: p.text }); } catch (e) { /* ignore */ }
+      }
+    });
+  }
+}
+
+
+function renderTodayTargetCard(dayInfo) {
+  const card = document.getElementById('todayTargetCard');
+  if (dayInfo.rest) {
+    card.innerHTML = `<div class="ttc-empty">😴 Bugün dinlenme günü — antrenman yok</div>`;
+    return;
+  }
+  const groupNames = dayInfo.groups.map(g => g.name).join(' + ');
+  let html = `<div class="ttc-day">🏋️ ${groupNames}</div>`;
+  dayInfo.groups.forEach(group => {
+    group.exercises.forEach(ex => {
+      const exSlug = slugify(ex);
+      const s = getExerciseStats(exSlug);
+      const lastText = s.last ? formatSetsList(s.last).replace(/<br>/g, ', ') : 'Henüz geçmiş yok';
+      const targetText = s.nextTarget || 'İlk kaydını bugün oluştur';
+      html += `
+        <div class="ttc-exercise">
+          <div class="ttc-name">${ex}</div>
+          <div class="ttc-row"><span>Son antrenman</span><span>${lastText}</span></div>
+          <div class="ttc-row"><span>🎯 Bugünkü hedef</span><span class="ttc-target">${targetText}</span></div>
+        </div>`;
+    });
+  });
+  card.innerHTML = html;
+}
+
+function renderMotivationCard() {
+  const m = getMotivationScores();
+  const card = document.getElementById('motivationCard');
+  const rows = [
+    ['Antrenman', m.workoutScore],
+    ['Beslenme', m.nutScore],
+    ['Su', m.waterScore],
+    ['İstikrar', m.consistencyScore],
+  ].map(([label, val]) => `
+    <div class="score-row">
+      <span class="score-label">${label}</span>
+      <div class="score-bar-bg"><div class="score-bar-fill" style="width:${val}%"></div></div>
+      <span class="score-val">${val}%</span>
+    </div>`).join('');
+  card.innerHTML = `
+    <div class="overall-score"><div class="num">${m.overall}</div><div class="label">Genel Fitness Skoru (son 7 gün)</div></div>
+    ${rows}`;
+}
+
+/* ===================== HELPERS ===================== */
+function formatDateTR(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' });
+}
+function flashStatus(msg) {
+  const el = document.getElementById('statusLine');
+  el.textContent = msg;
+  setTimeout(() => { el.textContent = ''; }, 2000);
+}
+
+/* ===================== AUTO-SAVE (persistent storage) ===================== */
+const STORAGE_KEY = 'fitness-app-state-v1';
+let saveTimer = null;
+let autoSaveWorking = true;
+
+function markDirty() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(persistToStorage, 700);
+}
+
+async function persistToStorage(retry = 0) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
+    autoSaveWorking = true;
+    document.getElementById('autoSaveDot').style.background = '#6bff8f';
+  } catch (e) {
+    if (retry < 2) {
+      setTimeout(() => persistToStorage(retry + 1), 500);
+    } else {
+      autoSaveWorking = false;
+      document.getElementById('autoSaveDot').style.background = '#ff6b6b';
+    }
+  }
+}
+
+async function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      STATE = Object.assign({ workouts: {}, meals: {}, water: {}, weightLog: [], goals: STATE.goals }, parsed);
+      migrateAllWorkouts();
+      migrateGoals();
+    }
+    autoSaveWorking = true;
+  } catch (e) {
+    autoSaveWorking = false;
+  }
+}
+
+/* ===================== EXPORT / IMPORT ===================== */
+function exportData() {
+  const json = JSON.stringify(STATE);
+  const encoded = btoa(unescape(encodeURIComponent(json)));
+  document.getElementById('exportText').value = encoded;
+  document.getElementById('exportModal').style.display = 'block';
+}
+function closeExportModal() { document.getElementById('exportModal').style.display = 'none'; }
+async function copyExportText() {
+  const text = document.getElementById('exportText').value;
+  const btn = document.getElementById('copyExportBtn');
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = '✓ Kopyalandı';
+    setTimeout(() => { btn.textContent = '📋 Kopyala'; }, 1500);
+  } catch (e) {
+    document.getElementById('exportText').select();
+    try { document.execCommand('copy'); btn.textContent = '✓ Kopyalandı'; setTimeout(() => { btn.textContent = '📋 Kopyala'; }, 1500); }
+    catch (e2) { alert('Kopyalama başarısız, metni elle seçip kopyala.'); }
+  }
+}
+function openImportModal() {
+  document.getElementById('importText').value = '';
+  document.getElementById('importModal').style.display = 'block';
+}
+function closeImportModal() { document.getElementById('importModal').style.display = 'none'; }
+function confirmImport() {
+  const text = document.getElementById('importText').value.trim();
+  if (!text) { closeImportModal(); return; }
+  try {
+    const json = decodeURIComponent(escape(atob(text)));
+    const parsed = JSON.parse(json);
+    STATE = Object.assign({ workouts: {}, meals: {}, water: {}, weightLog: [], goals: STATE.goals }, parsed);
+    migrateAllWorkouts();
+  migrateGoals();
+    closeImportModal();
+    renderAll();
+    flashStatus('Veriler geri yüklendi ✓');
+  } catch (e) {
+    alert('Kod okunamadı, doğru yapıştırdığından emin ol.');
+  }
+}
+
+function renderAll() {
+  renderWorkoutTabs();
+  renderHome();
+  renderWorkout();
+  renderNutrition();
+  renderWater();
+  renderProgress();
+}
+
+/* init */
+(async () => {
+  document.getElementById('statusLine').textContent = 'Yükleniyor...';
+  await loadFromStorage();
+  migrateAllWorkouts();
+  migrateGoals();
+  document.getElementById('foodSearchInput').addEventListener('input', renderFoodSearchResults);
+  setupPhotoInputs();
+  renderAll();
+  setInterval(() => { if (document.getElementById('screen-home').classList.contains('active')) checkReminders(); }, 60000);
+  document.getElementById('statusLine').textContent = autoSaveWorking ? '' : 'Otomatik kayıt çalışmıyor — Dışa Aktar\'ı kullan';
+})();
+</script>
+
+</body>
+</html>
